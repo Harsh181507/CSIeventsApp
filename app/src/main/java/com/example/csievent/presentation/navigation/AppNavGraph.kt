@@ -9,7 +9,6 @@ import com.example.csievent.presentation.auth.RegisterScreen
 import com.example.csievent.presentation.judge.JudgeDashboardScreen
 import com.example.csievent.presentation.judge.criteria.JudgeCriteriaScreen
 import com.example.csievent.presentation.judge.teams.JudgeTeamsScreen
-import com.example.csievent.presentation.organizer.CreateEventScreen
 import com.example.csievent.presentation.organizer.OrganizerDashboardScreen
 import com.example.csievent.presentation.organizer.assign.AssignJudgeScreen
 import com.example.csievent.presentation.organizer.events.OrganizerEventDetailsScreen
@@ -45,9 +44,8 @@ fun AppNavGraph(navController: NavHostController) {
             OrganizerDashboardScreen(navController = navController)
         }
 
-        composable(Routes.CREATE_EVENT) {
-            CreateEventScreen(navController = navController)
-        }
+
+
 
         composable("${Routes.ORGANIZER_EVENT_DETAILS}/{eventId}") { back ->
             val eventId = back.arguments?.getString("eventId")?.toLongOrNull()

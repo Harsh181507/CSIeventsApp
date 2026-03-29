@@ -35,4 +35,13 @@ class CriteriaRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
+
+    override suspend fun deleteCriteria(criteriaId: Long): Result<Unit> {
+        return try {
+            criteriaApi.deleteCriteria(criteriaId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

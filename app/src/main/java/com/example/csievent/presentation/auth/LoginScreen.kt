@@ -16,11 +16,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -31,23 +31,21 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.csievent.R
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.presentation.student.CSILoader
 import com.example.csievent.presentation.student.LoaderSize
 import kotlinx.coroutines.delay
 import kotlin.math.PI
-import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 
-// ── star field ────────────────────────────────────────────────────────────────
-private val LOGIN_STARS = listOf(
-    0.05f to 0.04f, 0.91f to 0.07f, 0.42f to 0.02f, 0.16f to 0.15f, 0.75f to 0.10f,
-    0.03f to 0.30f, 0.97f to 0.22f, 0.30f to 0.38f, 0.82f to 0.44f, 0.09f to 0.53f,
-    0.67f to 0.57f, 0.54f to 0.80f, 0.22f to 0.75f, 0.86f to 0.69f, 0.47f to 0.91f,
-    0.71f to 0.88f, 0.34f to 0.63f, 0.61f to 0.21f, 0.49f to 0.46f, 0.25f to 0.34f,
-    0.79f to 0.72f, 0.38f to 0.56f, 0.92f to 0.84f, 0.13f to 0.68f, 0.58f to 0.97f,
-    0.66f to 0.39f, 0.41f to 0.71f, 0.84f to 0.56f, 0.20f to 0.49f, 0.55f to 0.16f
+private val LG_STARS = listOf(
+    0.05f to 0.06f, 0.92f to 0.08f, 0.38f to 0.03f, 0.14f to 0.18f, 0.72f to 0.12f,
+    0.02f to 0.35f, 0.96f to 0.28f, 0.28f to 0.42f, 0.80f to 0.48f, 0.08f to 0.58f,
+    0.64f to 0.62f, 0.50f to 0.82f, 0.20f to 0.78f, 0.84f to 0.72f, 0.44f to 0.94f,
+    0.68f to 0.90f, 0.32f to 0.66f, 0.58f to 0.24f, 0.46f to 0.50f, 0.22f to 0.38f,
+    0.76f to 0.76f, 0.36f to 0.58f, 0.90f to 0.86f, 0.12f to 0.70f, 0.55f to 0.98f
 )
 
 @Composable
@@ -59,14 +57,12 @@ fun LoginScreen(
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var showPass by remember { mutableStateOf(false) }
-    var dockSuccess by remember { mutableStateOf(false) }
+    var success by remember { mutableStateOf(false) }
 
-    // Navigate on role received
     LaunchedEffect(state.role) {
         state.role?.let { role ->
-            dockSuccess = true
-            delay(1400)
+            success = true
+            delay(1200)
             val dest = when (role) {
                 "STUDENT" -> Routes.STUDENT_DASHBOARD
                 "JUDGE" -> Routes.JUDGE_DASHBOARD
@@ -77,387 +73,334 @@ fun LoginScreen(
         }
     }
 
-    val emailFilled = email.isNotBlank()
-    val passwordFilled = password.isNotBlank()
-    val formCharge = listOf(emailFilled, passwordFilled).count { it } / 2f
+    val f1 = email.isNotBlank()
+    val f2 = password.isNotBlank()
 
-    // ── infinite animations ───────────────────────────────────────────
     val inf = rememberInfiniteTransition(label = "lg")
 
+    // All orbital animations — slow and majestic like the nebula forge screens
+    val ring1 by inf.animateFloat(
+        0f,
+        360f,
+        infiniteRepeatable(tween(8000, easing = LinearEasing)),
+        "r1"
+    )
+    val ring2 by inf.animateFloat(
+        360f,
+        0f,
+        infiniteRepeatable(tween(13000, easing = LinearEasing)),
+        "r2"
+    )
+    val ring3 by inf.animateFloat(
+        0f,
+        360f,
+        infiniteRepeatable(tween(20000, easing = LinearEasing)),
+        "r3"
+    )
+    val pulse by inf.animateFloat(
+        0.92f,
+        1f,
+        infiniteRepeatable(tween(2500, easing = EaseInOutSine), RepeatMode.Reverse),
+        "pu"
+    )
     val twinkle by inf.animateFloat(
-        0f, (2f * PI).toFloat(),
-        infiniteRepeatable(tween(9000, easing = LinearEasing)), "tw"
+        0f,
+        (2f * PI).toFloat(),
+        infiniteRepeatable(tween(8000, easing = LinearEasing)),
+        "tw"
     )
-    val nebDrift by inf.animateFloat(
-        0f, 22f,
-        infiniteRepeatable(tween(14000, easing = EaseInOutSine), RepeatMode.Reverse), "nd"
+    val nebula by inf.animateFloat(
+        0f,
+        18f,
+        infiniteRepeatable(tween(13000, easing = EaseInOutSine), RepeatMode.Reverse),
+        "nb"
     )
-
-    // Station rotation — slow, majestic
-    val stationRot by inf.animateFloat(
-        0f, 360f,
-        infiniteRepeatable(tween(20000, easing = LinearEasing)), "sr"
-    )
-
-    // Station arm rotation — opposite direction, faster
-    val armRot by inf.animateFloat(
-        360f, 0f,
-        infiniteRepeatable(tween(12000, easing = LinearEasing)), "ar"
-    )
-
-    // Docking ring pulse
-    val dockRing by inf.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(2000, easing = LinearEasing)), "dr"
-    )
-
-    // Signal beam flicker
-    val signalFlick by inf.animateFloat(
-        0.6f, 1f,
-        infiniteRepeatable(tween(120), RepeatMode.Reverse), "sf"
-    )
-
-    // Approach corridor perspective lines scroll
-    val corridorScroll by inf.animateFloat(
-        0f, 1f,
-        infiniteRepeatable(tween(1800, easing = LinearEasing)), "cs"
-    )
-
-    // Beacon blink
     val beacon by inf.animateFloat(
-        0.2f, 1f,
-        infiniteRepeatable(tween(800, easing = EaseInOutSine), RepeatMode.Reverse), "bc"
+        0.2f,
+        1f,
+        infiniteRepeatable(tween(900, easing = EaseInOutSine), RepeatMode.Reverse),
+        "bc"
+    )
+    val particleAngle by inf.animateFloat(
+        0f,
+        360f,
+        infiniteRepeatable(tween(5000, easing = LinearEasing)),
+        "pa"
     )
 
-    // Core breathe
-    val stationBreath by inf.animateFloat(
-        0.96f, 1.04f,
-        infiniteRepeatable(tween(3000, easing = EaseInOutSine), RepeatMode.Reverse), "sb"
+    // Success burst
+    val burstP by animateFloatAsState(
+        targetValue = if (success) 1f else 0f,
+        animationSpec = tween(1000, easing = EaseOutExpo), label = "bp"
     )
 
-    // Supernova on success
-    val novaP by animateFloatAsState(
-        targetValue = if (dockSuccess) 1f else 0f,
-        animationSpec = tween(1200, easing = EaseOutExpo), label = "np"
-    )
-
-    // Form slide in
+    // Form slides up
     var formIn by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) { delay(300); formIn = true }
+    LaunchedEffect(Unit) { delay(200); formIn = true }
     val formA by animateFloatAsState(if (formIn) 1f else 0f, tween(700), label = "fa")
     val formY by animateFloatAsState(
-        if (formIn) 0f else 60f,
-        spring(0.7f, Spring.StiffnessMediumLow), label = "fy"
+        if (formIn) 0f else 80f,
+        spring(0.6f, Spring.StiffnessMediumLow), label = "fy"
     )
 
-    Box(modifier = Modifier
+    Box(Modifier
         .fillMaxSize()
         .background(Color(0xFF020912))) {
 
-        // ── BACKGROUND ────────────────────────────────────────────────
+        // ── STARFIELD BACKGROUND ──────────────────────────────────────
         Canvas(Modifier.fillMaxSize()) {
+            // Deep space gradient
             drawRect(
                 brush = Brush.verticalGradient(
-                    listOf(Color(0xFF030A18), Color(0xFF020810), Color(0xFF040614))
+                    listOf(Color(0xFF030B1A), Color(0xFF020810), Color(0xFF050618))
                 )
             )
 
-            // Nebulae
+            // Nebula 1 — top right, deep violet
             drawCircle(
                 brush = Brush.radialGradient(
-                    listOf(Color(0xFF1A0A50).copy(alpha = 0.5f), Color.Transparent),
-                    radius = 480f,
-                    center = Offset(size.width * 0.8f + nebDrift, size.height * 0.25f)
+                    listOf(Color(0xFF1E0E5A).copy(alpha = 0.55f), Color.Transparent),
+                    radius = 500f,
+                    center = Offset(size.width * 0.85f + nebula, size.height * 0.22f)
                 ),
-                radius = 480f, center = Offset(size.width * 0.8f + nebDrift, size.height * 0.25f)
+                radius = 500f,
+                center = Offset(size.width * 0.85f + nebula, size.height * 0.22f)
             )
+            // Nebula 2 — bottom left, dark teal
             drawCircle(
                 brush = Brush.radialGradient(
-                    listOf(Color(0xFF041830).copy(alpha = 0.45f), Color.Transparent),
-                    radius = 380f, center = Offset(size.width * 0.1f, size.height * 0.65f)
+                    listOf(Color(0xFF041C30).copy(alpha = 0.45f), Color.Transparent),
+                    radius = 380f,
+                    center = Offset(size.width * 0.08f, size.height * 0.75f)
                 ),
-                radius = 380f, center = Offset(size.width * 0.1f, size.height * 0.65f)
+                radius = 380f,
+                center = Offset(size.width * 0.08f, size.height * 0.75f)
             )
 
-            // Stars
-            LOGIN_STARS.forEachIndexed { i, (x, y) ->
-                val tw = (sin(twinkle + i * 0.6f) * 0.3f + 0.7f).toFloat()
+            // Stars — 25, varied brightness, slow twinkle
+            LG_STARS.forEachIndexed { i, (x, y) ->
+                val tw = (sin(twinkle + i * 0.58f) * 0.32f + 0.68f).toFloat()
                 val r = when (i % 5) {
-                    0 -> 2.3f; 1 -> 1.7f; else -> 1.1f
+                    0 -> 2.4f; 1 -> 1.8f; else -> 1.1f
                 }
-                drawCircle(
-                    Color.White.copy(alpha = tw * 0.6f), r,
-                    Offset(size.width * x, size.height * y)
-                )
+                val pos = Offset(size.width * x, size.height * y)
+                drawCircle(Color.White.copy(alpha = tw * 0.65f), r, pos)
+                // Diffraction cross on bright stars
                 if (i % 5 == 0) {
-                    val sx = size.width * x;
-                    val sy = size.height * y
                     drawLine(
                         Color.White.copy(alpha = tw * 0.18f),
-                        Offset(sx - 7f, sy), Offset(sx + 7f, sy), 0.5f
+                        Offset(pos.x - 8f, pos.y), Offset(pos.x + 8f, pos.y), 0.5f
                     )
                     drawLine(
                         Color.White.copy(alpha = tw * 0.18f),
-                        Offset(sx, sy - 7f), Offset(sx, sy + 7f), 0.5f
+                        Offset(pos.x, pos.y - 8f), Offset(pos.x, pos.y + 8f), 0.5f
                     )
                 }
             }
         }
 
         Column(
-            modifier = Modifier
+            Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(Modifier.height(48.dp))
 
-            // ── SPACE STATION HERO ────────────────────────────────────
+            // ── LOGO + ORBITAL HERO ───────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(300.dp),
+                    .height(280.dp),
                 contentAlignment = Alignment.Center
             ) {
+                // Orbital rings drawn behind the logo
                 Canvas(Modifier
                     .fillMaxWidth()
-                    .height(300.dp)) {
+                    .height(280.dp)) {
                     val cx = size.width / 2f
                     val cy = size.height / 2f
-                    val base = 50.dp.toPx()
+                    val logoR = 58.dp.toPx()   // matches logo circle size
 
-                    // ── Approach corridor — perspective rings ──────────
-                    // Warp-tunnel effect: rings shrink toward center
-                    for (ring in 1..6) {
-                        val t = (ring / 6f + corridorScroll) % 1f
-                        val ringR = base * (0.5f + t * 3.5f)
-                        val alpha = (1f - t) * 0.25f
-                        val ringOff = Offset(cx, cy)
-                        drawCircle(
-                            Color(0xFF4B3CC8).copy(alpha = alpha), ringR, ringOff,
-                            style = Stroke(0.8f)
-                        )
-                    }
-
-                    // ── Docking target grid lines ─────────────────────
-                    val gridSize = base * 2.8f
-                    for (line in -3..3) {
-                        val alpha = (0.15f - abs(line) * 0.025f).coerceAtLeast(0.02f)
-                        // Horizontal
-                        drawLine(
-                            Color(0xFF4B3CC8).copy(alpha = alpha),
-                            Offset(cx - gridSize, cy + line * base * 0.38f),
-                            Offset(cx + gridSize, cy + line * base * 0.38f), 0.5f
-                        )
-                        // Vertical
-                        drawLine(
-                            Color(0xFF4B3CC8).copy(alpha = alpha),
-                            Offset(cx + line * base * 0.55f, cy - gridSize * 0.6f),
-                            Offset(cx + line * base * 0.55f, cy + gridSize * 0.6f), 0.5f
-                        )
-                    }
-
-                    // ── Station glow ──────────────────────────────────
+                    // ── Far outer atmosphere halo ─────────────────────
                     drawCircle(
                         brush = Brush.radialGradient(
                             listOf(
-                                Color(0xFF6B3FD8).copy(alpha = 0.35f * stationBreath),
+                                Color(0xFFD4AF37).copy(alpha = 0.10f * pulse),
                                 Color.Transparent
                             ),
-                            center = Offset(cx, cy), radius = base * 3f
+                            center = Offset(cx, cy), radius = logoR * 3.8f
                         ),
-                        radius = base * 3f, center = Offset(cx, cy)
+                        radius = logoR * 3.8f, center = Offset(cx, cy)
                     )
-
-                    // ── Outer docking ring — slow rotation ────────────
-                    rotate(stationRot, Offset(cx, cy)) {
-                        // Main ring
-                        drawCircle(
-                            Color(0xFF5B3FD8).copy(alpha = 0.5f),
-                            base * 2.2f, Offset(cx, cy),
-                            style = Stroke(2.5f)
-                        )
-                        // 8 docking nodes on ring
-                        for (n in 0..7) {
-                            val a = n * PI.toFloat() / 4f
-                            val nx = cx + base * 2.2f * cos(a)
-                            val ny = cy + base * 2.2f * sin(a)
-                            drawCircle(Color(0xFFD4AF37).copy(alpha = 0.7f), 4f, Offset(nx, ny))
-                            drawCircle(
-                                Color(0xFFD4AF37).copy(alpha = 0.2f), 8f, Offset(nx, ny),
-                                style = Stroke(1f)
-                            )
-                        }
-                        // Ring tick marks
-                        for (tick in 0..23) {
-                            val a = tick * PI.toFloat() / 12f
-                            val r1 = base * 2.05f
-                            val r2 = base * 2.35f
-                            drawLine(
-                                Color(0xFF8B6DFF).copy(alpha = 0.35f),
-                                Offset(cx + r1 * cos(a), cy + r1 * sin(a)),
-                                Offset(cx + r2 * cos(a), cy + r2 * sin(a)), 0.8f
-                            )
-                        }
-                    }
-
-                    // ── Solar arms — opposite direction ───────────────
-                    rotate(armRot, Offset(cx, cy)) {
-                        for (arm in 0..3) {
-                            val a = arm * PI.toFloat() / 2f
-                            // Arm shaft
-                            drawLine(
-                                Color(0xFF7C3AED).copy(alpha = 0.5f),
-                                Offset(cx + base * 0.55f * cos(a), cy + base * 0.55f * sin(a)),
-                                Offset(cx + base * 1.8f * cos(a), cy + base * 1.8f * sin(a)), 3f
-                            )
-                            // Solar panel
-                            val panX = cx + base * 2.0f * cos(a)
-                            val panY = cy + base * 2.0f * sin(a)
-                            val pW = base * 0.55f;
-                            val pH = base * 0.22f
-                            val perpA = a + PI.toFloat() / 2f
-                            drawRect(
-                                brush = Brush.linearGradient(
-                                    listOf(
-                                        Color(0xFF4B3CC8).copy(alpha = 0.6f),
-                                        Color(0xFF7C3AED).copy(alpha = 0.4f)
-                                    )
-                                ),
-                                topLeft = Offset(
-                                    panX - pW / 2f * cos(perpA) - pH / 2f * cos(a),
-                                    panY - pW / 2f * sin(perpA) - pH / 2f * sin(a)
-                                ),
-                                size = Size(pW, pH)
-                            )
-                            // Panel border
-                            drawRect(
-                                Color(0xFF9B6DFF).copy(alpha = 0.35f),
-                                topLeft = Offset(
-                                    panX - pW / 2f * cos(perpA) - pH / 2f * cos(a),
-                                    panY - pW / 2f * sin(perpA) - pH / 2f * sin(a)
-                                ),
-                                size = Size(pW, pH), style = Stroke(0.6f)
-                            )
-                        }
-                    }
-
-                    // ── Station core hub ──────────────────────────────
                     drawCircle(
                         brush = Brush.radialGradient(
                             listOf(
-                                Color(0xFFE8E0FF), Color(0xFF9B6DFF),
-                                Color(0xFF4B3CC8), Color(0xFF1A0A40)
+                                Color(0xFF4B3CC8).copy(alpha = 0.18f * pulse),
+                                Color.Transparent
                             ),
-                            center = Offset(cx - base * 0.18f, cy - base * 0.22f),
-                            radius = base * 1.5f
+                            center = Offset(cx, cy), radius = logoR * 2.8f
                         ),
-                        radius = base * 0.55f, center = Offset(cx, cy)
-                    )
-                    // Core border
-                    drawCircle(
-                        Color(0xFFD4AF37).copy(alpha = 0.6f * stationBreath),
-                        base * 0.55f, Offset(cx, cy), style = Stroke(1.5f)
-                    )
-                    // Specular
-                    drawCircle(
-                        brush = Brush.radialGradient(
-                            listOf(Color.White.copy(alpha = 0.6f), Color.Transparent),
-                            center = Offset(cx - base * 0.2f, cy - base * 0.22f),
-                            radius = base * 0.22f
-                        ),
-                        radius = base * 0.22f,
-                        center = Offset(cx - base * 0.2f, cy - base * 0.22f)
+                        radius = logoR * 2.8f, center = Offset(cx, cy)
                     )
 
-                    // ── Docking port ring — pulsing ────────────────────
-                    drawCircle(
-                        Color(0xFF00FF88).copy(alpha = (1f - dockRing) * 0.6f),
-                        base * (0.65f + dockRing * 0.5f), Offset(cx, cy),
-                        style = Stroke(1.5f)
-                    )
-
-                    // ── Signal beam — vertical, flickers ─────────────
-                    if (formCharge > 0f) {
-                        val beamW = 3f
-                        drawRect(
-                            brush = Brush.verticalGradient(
-                                listOf(
-                                    Color.Transparent,
-                                    Color(0xFF00FF88).copy(alpha = 0.4f * formCharge * signalFlick)
-                                ),
-                                startY = 30f, endY = cy - base * 0.65f
-                            ),
-                            topLeft = Offset(cx - beamW / 2f, 30f),
-                            size = Size(beamW, cy - base * 0.65f - 30f)
+                    // ── Ring 1 — outermost, gold dashed, slow CCW ─────
+                    rotate(ring3, Offset(cx, cy)) {
+                        drawCircle(
+                            Color(0xFFD4AF37).copy(alpha = 0.35f),
+                            logoR * 2.7f, Offset(cx, cy),
+                            style = Stroke(
+                                1f,
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(18f, 9f))
+                            )
                         )
-                        // Data packets on beam
-                        for (p in 0..2) {
-                            val pY = cy - base * 0.65f -
-                                    ((corridorScroll + p * 0.33f) % 1f) * (cy - base * 0.65f - 40f)
+                        // 4 gold nodes
+                        for (i in 0..3) {
+                            val a = i * PI.toFloat() / 2f
+                            val nx = cx + logoR * 2.7f * cos(a)
+                            val ny = cy + logoR * 2.7f * sin(a)
+                            drawCircle(Color(0xFFD4AF37).copy(alpha = 0.6f), 3.5f, Offset(nx, ny))
                             drawCircle(
-                                Color(0xFF00FF88).copy(alpha = 0.8f * formCharge),
-                                3f, Offset(cx, pY)
+                                Color(0xFFD4AF37).copy(alpha = 0.2f), 8f, Offset(nx, ny),
+                                style = Stroke(0.8f)
                             )
                         }
                     }
 
-                    // ── Supernova on success ──────────────────────────
-                    if (novaP > 0f) {
-                        val cols = listOf(
-                            Color.White, Color(0xFF9B6DFF), Color(0xFFD4AF37),
-                            Color(0xFF00FF88), Color(0xFF06B6D4), Color(0xFFEC4899)
+                    // ── Ring 2 — violet solid, CW ─────────────────────
+                    rotate(ring1, Offset(cx, cy)) {
+                        drawCircle(
+                            Color(0xFF7C3AED).copy(alpha = 0.55f),
+                            logoR * 2.0f, Offset(cx, cy), style = Stroke(1.5f)
                         )
-                        for (i in 0..23) {
-                            val a = i * 15f * PI.toFloat() / 180f
-                            val dist = novaP * base * 5f
+                        // Violet rider dot
+                        drawCircle(
+                            Color(0xFF9B6DFF).copy(alpha = 0.9f), 5f,
+                            Offset(cx + logoR * 2.0f, cy)
+                        )
+                        drawCircle(
+                            Color(0xFF9B6DFF).copy(alpha = 0.3f), 11f,
+                            Offset(cx + logoR * 2.0f, cy), style = Stroke(1f)
+                        )
+                    }
+
+                    // ── Ring 3 — inner, CCW, tilted ellipse ───────────
+                    rotate(ring2 + 35f, Offset(cx, cy)) {
+                        drawOval(
+                            Color(0xFF4B3CC8).copy(alpha = 0.45f),
+                            Offset(cx - logoR * 1.45f, cy - logoR * 0.38f),
+                            Size(logoR * 2.9f, logoR * 0.76f),
+                            style = Stroke(1.2f)
+                        )
+                        drawCircle(
+                            Color(0xFFD4AF37).copy(alpha = 0.75f), 4f,
+                            Offset(cx, cy - logoR * 0.38f)
+                        )
+                    }
+
+                    // ── Orbiting particles — 12 dots on ellipse ───────
+                    for (i in 0..11) {
+                        val t = (particleAngle / 360f + i / 12f) % 1f
+                        val a = t * 2f * PI.toFloat()
+                        val pR = logoR * 1.65f
+                        val px = cx + pR * cos(a)
+                        val py = cy + pR * 0.42f * sin(a)
+                        val col = if (i % 3 == 0) Color(0xFFD4AF37) else Color(0xFF8B6DFF)
+                        drawCircle(
+                            col.copy(alpha = 0.65f),
+                            if (i % 3 == 0) 3f else 2f,
+                            Offset(px, py)
+                        )
+                    }
+
+                    // ── Inner charge arc — fills as fields complete ───
+                    val charge = listOf(f1, f2).count { it } / 2f
+                    drawCircle(
+                        Color(0xFF0E0C22), logoR * 1.15f, Offset(cx, cy),
+                        style = Stroke(3.5f)
+                    )
+                    if (charge > 0f) {
+                        drawArc(
+                            color = if (charge >= 1f) Color(0xFF10B981) else Color(0xFFD4AF37),
+                            startAngle = -90f, sweepAngle = charge * 360f, useCenter = false,
+                            topLeft = Offset(cx - logoR * 1.15f, cy - logoR * 1.15f),
+                            size = Size(logoR * 2.3f, logoR * 2.3f),
+                            style = Stroke(3.5f, cap = StrokeCap.Round)
+                        )
+                    }
+
+                    // ── Success burst ─────────────────────────────────
+                    if (burstP > 0f) {
+                        val cols = listOf(
+                            Color(0xFFD4AF37), Color(0xFF9B6DFF), Color.White,
+                            Color(0xFF10B981), Color(0xFF06B6D4)
+                        )
+                        for (i in 0..19) {
+                            val a = i * 18f * PI.toFloat() / 180f
+                            val dist = burstP * logoR * 4f
                             val px = cx + dist * cos(a);
                             val py = cy + dist * sin(a)
-                            val pA = (1f - novaP).coerceIn(0f, 1f)
+                            val pA = (1f - burstP).coerceIn(0f, 1f)
                             drawCircle(
                                 cols[i % cols.size].copy(alpha = pA),
-                                (6f - novaP * 5f).coerceAtLeast(0.5f), Offset(px, py)
-                            )
-                            drawLine(
-                                cols[i % cols.size].copy(alpha = pA * 0.3f),
-                                Offset(cx, cy), Offset(px, py), 0.7f
+                                (5f - burstP * 4f).coerceAtLeast(0.5f), Offset(px, py)
                             )
                         }
-                        for (ring in 0..2) {
+                        for (r in 0..1) {
                             drawCircle(
-                                Color(0xFF9B6DFF).copy(alpha = (1f - novaP) * 0.5f),
-                                novaP * base * (3f + ring * 1.5f), Offset(cx, cy),
-                                style = Stroke(2f - ring * 0.5f)
+                                Color(0xFFD4AF37).copy(alpha = (1f - burstP) * 0.5f),
+                                burstP * logoR * (2.5f + r * 1.5f), Offset(cx, cy),
+                                style = Stroke(2f)
                             )
                         }
                     }
                 }
 
-                // "CSI" text in station core
-                Text(
-                    "CSI", color = Color.White.copy(alpha = 0.85f),
-                    fontSize = 10.sp, fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace, letterSpacing = 2.sp
+                // ── CSI LOGO — the centrepiece ────────────────────────
+                Image(
+                    painter = painterResource(id = R.drawable.csi_logo),
+                    contentDescription = "CSI VIT-AP",
+                    modifier = Modifier
+                        .size(116.dp)
+                        .clip(CircleShape)
+                        .border(
+                            2.dp,
+                            Brush.sweepGradient(
+                                listOf(
+                                    Color(0xFFD4AF37), Color(0xFF8B6DFF),
+                                    Color(0xFF4B3CC8), Color(0xFFD4AF37)
+                                )
+                            ),
+                            CircleShape
+                        )
                 )
             }
 
-            // ── TITLE ─────────────────────────────────────────────────
+            Spacer(Modifier.height(4.dp))
+
+            // ── TITLE TEXT ────────────────────────────────────────────
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.padding(horizontal = 24.dp)
             ) {
                 Text(
-                    "CSI EVENTS",
-                    color = Color.White, fontSize = 32.sp, fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
+                    "CSI VIT-AP",
+                    color = Color.White,
+                    fontSize = 30.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 4.sp,
+                    textAlign = TextAlign.Center
                 )
                 Text(
-                    "TECHNICAL CLUB",
-                    color = Color(0xFF8C83E4).copy(alpha = 0.7f), fontSize = 12.sp,
-                    letterSpacing = 5.sp, fontFamily = FontFamily.Monospace
+                    "EVENTS PORTAL",
+                    color = Color(0xFFD4AF37).copy(alpha = 0.75f),
+                    fontSize = 12.sp,
+                    letterSpacing = 6.sp,
+                    fontFamily = FontFamily.Monospace,
+                    textAlign = TextAlign.Center
                 )
-                Spacer(Modifier.height(4.dp))
-
-                // Docking status
+                Spacer(Modifier.height(6.dp))
+                // Status indicator
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -467,82 +410,84 @@ fun LoginScreen(
                             .size(5.dp)
                             .clip(CircleShape)
                             .background(
-                                if (formCharge >= 1f) Color(0xFF10B981).copy(alpha = beacon)
-                                else Color(0xFF4B3CC8).copy(alpha = beacon)
+                                when {
+                                    success -> Color(0xFF10B981).copy(alpha = beacon)
+                                    f1 && f2 -> Color(0xFF10B981).copy(alpha = beacon)
+                                    f1 || f2 -> Color(0xFFD4AF37).copy(alpha = beacon)
+                                    else -> Color(0xFF4B3CC8).copy(alpha = beacon)
+                                }
                             )
                     )
                     Text(
                         when {
-                            dockSuccess -> "DOCKING COMPLETE"
-                            formCharge >= 1f -> "READY TO DOCK"
-                            formCharge > 0f -> "APPROACH SEQUENCE ACTIVE"
-                            else -> "AWAITING AUTHENTICATION"
+                            success -> "ACCESS GRANTED"
+                            f1 && f2 -> "READY TO AUTHENTICATE"
+                            f1 || f2 -> "CREDENTIALS LOADING"
+                            else -> "AWAITING CREDENTIALS"
                         },
                         color = when {
-                            dockSuccess -> Color(0xFF10B981)
-                            formCharge >= 1f -> Color(0xFF10B981)
-                            formCharge > 0f -> Color(0xFFD4AF37)
-                            else -> Color(0xFF4B3CC8).copy(alpha = 0.7f)
+                            success -> Color(0xFF10B981)
+                            f1 && f2 -> Color(0xFF10B981)
+                            f1 || f2 -> Color(0xFFD4AF37)
+                            else -> Color(0xFF4B3CC8).copy(alpha = 0.65f)
                         },
-                        fontSize = 9.sp, fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold, letterSpacing = 1.sp
+                        fontSize = 9.sp,
+                        fontFamily = FontFamily.Monospace,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
                     )
                 }
             }
 
             Spacer(Modifier.height(28.dp))
 
-            // ── AUTHENTICATION PANEL ──────────────────────────────────
+            // ── FORM PANEL ────────────────────────────────────────────
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp)
+                    .padding(horizontal = 22.dp)
                     .offset(y = formY.dp)
                     .alpha(formA)
             ) {
-                // Panel
                 Box(
                     Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(24.dp))
                         .background(
                             Brush.verticalGradient(
-                                listOf(Color(0xFF08081A), Color(0xFF050510))
+                                listOf(Color(0xFF090916), Color(0xFF060510))
                             )
                         )
                         .border(
                             1.dp, Brush.linearGradient(
                                 listOf(
-                                    Color(0xFF4B3CC8).copy(alpha = 0.5f),
-                                    Color(0xFF7C3AED).copy(alpha = 0.2f),
-                                    Color(0xFF4B3CC8).copy(alpha = 0.5f)
+                                    Color(0xFFD4AF37).copy(alpha = 0.35f),
+                                    Color(0xFF4B3CC8).copy(alpha = 0.25f),
+                                    Color(0xFFD4AF37).copy(alpha = 0.35f)
                                 )
-                            ),
-                            RoundedCornerShape(24.dp)
+                            ), RoundedCornerShape(24.dp)
                         )
                         .padding(24.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-                        // Panel header
+                        // Header
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Canvas(Modifier.size(10.dp)) {
-                                drawCircle(
-                                    Color(0xFF4B3CC8), size.minDimension / 2f,
-                                    style = Stroke(1.5f)
-                                )
-                                drawCircle(
-                                    Color(0xFF4B3CC8).copy(alpha = 0.3f),
-                                    size.minDimension / 2f + 3f, style = Stroke(0.7f)
-                                )
-                            }
+                            Box(
+                                Modifier
+                                    .size(5.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFFD4AF37).copy(alpha = 0.6f))
+                            )
                             Text(
                                 "AUTHENTICATION",
-                                color = Color(0xFF8C83E4).copy(alpha = 0.55f), fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold, letterSpacing = 2.sp
+                                color = Color(0xFF8C83E4).copy(alpha = 0.55f),
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 2.sp
                             )
                             Box(
                                 Modifier
@@ -551,7 +496,7 @@ fun LoginScreen(
                                     .background(
                                         Brush.horizontalGradient(
                                             listOf(
-                                                Color(0xFF4B3CC8).copy(alpha = 0.35f),
+                                                Color(0xFF4B3CC8).copy(alpha = 0.3f),
                                                 Color.Transparent
                                             )
                                         )
@@ -559,146 +504,112 @@ fun LoginScreen(
                             )
                         }
 
-                        // Email field
-                        LoginField(
+                        // Email
+                        LgField(
                             value = email,
                             onValueChange = { email = it },
-                            label = "CREW EMAIL",
+                            label = "EMAIL ADDRESS",
                             placeholder = "your@email.com",
                             icon = Icons.Default.MailOutline,
                             accent = Color(0xFF4B3CC8),
-                            active = emailFilled,
+                            active = f1,
                             keyboardType = KeyboardType.Email,
                             visualTransformation = VisualTransformation.None
                         )
 
-                        // Password field
-                        LoginField(
+                        // Password
+                        LgField(
                             value = password,
                             onValueChange = { password = it },
-                            label = "ACCESS CODE",
+                            label = "PASSWORD",
                             placeholder = "••••••••",
                             icon = Icons.Default.Lock,
                             accent = Color(0xFF7C3AED),
-                            active = passwordFilled,
+                            active = f2,
                             keyboardType = KeyboardType.Password,
-                            visualTransformation = if (showPass) VisualTransformation.None
-                            else PasswordVisualTransformation()
+                            visualTransformation = PasswordVisualTransformation()
                         )
 
-                        // Charge bar
-                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Row(
-                                Modifier.fillMaxWidth(),
-                                Arrangement.SpaceBetween, Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    "DOCK READINESS",
-                                    color = Color(0xFF8C83E4).copy(alpha = 0.4f), fontSize = 9.sp,
-                                    fontFamily = FontFamily.Monospace, letterSpacing = 1.sp
-                                )
-                                val pct = (formCharge * 100).toInt()
-                                Text(
-                                    "$pct%",
-                                    color = if (formCharge >= 1f) Color(0xFF10B981)
-                                    else Color(0xFF4B3CC8),
-                                    fontSize = 10.sp, fontFamily = FontFamily.Monospace,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            Box(
-                                Modifier
-                                    .fillMaxWidth()
-                                    .height(4.dp)
-                                    .clip(RoundedCornerShape(2.dp))
-                                    .background(Color(0xFF0A0A1A))
-                            ) {
-                                val animCharge by animateFloatAsState(
-                                    formCharge,
-                                    tween(600, easing = EaseOutCubic), label = "acl"
-                                )
+                        // Progress bar
+                        val charge = listOf(f1, f2).count { it } / 2f
+                        val animCharge by animateFloatAsState(charge, tween(500), label = "ac")
+                        Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(6.dp)) {
+                            listOf(
+                                f1 to Color(0xFF4B3CC8),
+                                f2 to Color(0xFF7C3AED)
+                            ).forEach { (on, col) ->
                                 Box(
                                     Modifier
-                                        .fillMaxWidth(animCharge)
-                                        .fillMaxHeight()
-                                        .background(
-                                            Brush.horizontalGradient(
-                                                listOf(
-                                                    Color(0xFF4B3CC8), Color(0xFF7C3AED),
-                                                    if (formCharge >= 1f) Color(0xFF10B981)
-                                                    else Color(0xFF7C3AED)
-                                                )
-                                            )
+                                        .weight(1f)
+                                        .height(4.dp)
+                                        .clip(RoundedCornerShape(2.dp))
+                                        .background(if (on) col else Color(0xFF0E0E20))
+                                        .border(
+                                            0.5.dp,
+                                            col.copy(alpha = 0.22f),
+                                            RoundedCornerShape(2.dp)
                                         )
                                 )
                             }
                         }
 
-                        // LAUNCH / LOGIN button
-                        val canDock = emailFilled && passwordFilled && !state.isLoading
+                        // Login button
+                        val canLogin = f1 && f2 && !state.isLoading
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(16.dp))
+                                .clip(RoundedCornerShape(14.dp))
                                 .background(
-                                    if (canDock)
-                                        Brush.linearGradient(
-                                            listOf(
-                                                Color(0xFF1A0A50), Color(0xFF2A1070)
-                                            )
-                                        )
-                                    else
-                                        Brush.linearGradient(
-                                            listOf(
-                                                Color(0xFF0A0A14), Color(0xFF0A0A14)
-                                            )
-                                        )
+                                    if (canLogin) Brush.linearGradient(
+                                        listOf(Color(0xFF1C0D55), Color(0xFF2E1475))
+                                    )
+                                    else Brush.linearGradient(
+                                        listOf(Color(0xFF0A0A16), Color(0xFF0A0A16))
+                                    )
                                 )
                                 .border(
                                     1.dp,
-                                    if (canDock) Brush.linearGradient(
+                                    if (canLogin) Brush.linearGradient(
                                         listOf(
-                                            Color(0xFF5B3FD8).copy(alpha = 0.8f),
-                                            Color(0xFF8B6DFF).copy(alpha = 0.4f),
-                                            Color(0xFF5B3FD8).copy(alpha = 0.8f)
+                                            Color(0xFFD4AF37).copy(alpha = 0.6f),
+                                            Color(0xFF7C3AED).copy(alpha = 0.3f),
+                                            Color(0xFFD4AF37).copy(alpha = 0.6f)
                                         )
                                     )
                                     else Brush.linearGradient(
                                         listOf(
-                                            Color(0xFF151525), Color(0xFF151525)
+                                            Color(0xFF181828), Color(0xFF181828)
                                         )
                                     ),
-                                    RoundedCornerShape(16.dp)
+                                    RoundedCornerShape(14.dp)
                                 )
-                                .clickable(enabled = canDock) {
+                                .clickable(enabled = canLogin) {
                                     viewModel.login(email, password)
                                 }
-                                .padding(vertical = 18.dp),
+                                .padding(vertical = 17.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             AnimatedContent(
                                 targetState = when {
-                                    dockSuccess -> 2
+                                    success -> 2
                                     state.isLoading -> 1
                                     else -> 0
                                 },
-                                transitionSpec = { fadeIn(tween(250)) togetherWith fadeOut(tween(200)) },
-                                label = "btn"
+                                transitionSpec = { fadeIn(tween(200)) togetherWith fadeOut(tween(150)) },
+                                label = "lg_btn"
                             ) { s ->
                                 when (s) {
                                     0 -> Row(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                                     ) {
-                                        Text("🚀", fontSize = 18.sp)
+                                        Text("🚀", fontSize = 17.sp)
                                         Text(
-                                            if (canDock) "INITIATE DOCKING" else "ENTER CREDENTIALS",
-                                            color = if (canDock) Color(0xFF8B6DFF)
-                                            else Color(0xFF252535),
-                                            fontSize = 14.sp,
+                                            if (canLogin) "SIGN IN" else "ENTER CREDENTIALS",
+                                            color = if (canLogin) Color.White else Color(0xFF252535),
+                                            fontSize = 15.sp,
                                             fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace,
-                                            letterSpacing = 0.5.sp
+                                            letterSpacing = 1.sp
                                         )
                                     }
 
@@ -708,9 +619,11 @@ fun LoginScreen(
                                     ) {
                                         CSILoader(size = LoaderSize.SMALL)
                                         Text(
-                                            "AUTHENTICATING",
-                                            color = Color(0xFF8B6DFF), fontSize = 13.sp,
-                                            fontFamily = FontFamily.Monospace, letterSpacing = 1.sp
+                                            "VERIFYING",
+                                            color = Color(0xFF8B6DFF),
+                                            fontSize = 14.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            letterSpacing = 2.sp
                                         )
                                     }
 
@@ -718,12 +631,12 @@ fun LoginScreen(
                                         verticalAlignment = Alignment.CenterVertically,
                                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                                     ) {
-                                        Text("✦", fontSize = 18.sp, color = Color(0xFF10B981))
+                                        Text("✦", fontSize = 17.sp, color = Color(0xFF10B981))
                                         Text(
-                                            "DOCKING COMPLETE",
-                                            color = Color(0xFF10B981), fontSize = 14.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            fontFamily = FontFamily.Monospace
+                                            "ACCESS GRANTED",
+                                            color = Color(0xFF10B981),
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
                                         )
                                     }
                                 }
@@ -736,7 +649,7 @@ fun LoginScreen(
                                 Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(10.dp))
-                                    .background(Color(0xFF1A0808))
+                                    .background(Color(0xFF180808))
                                     .border(
                                         1.dp, Color(0xFFEF4444).copy(alpha = 0.35f),
                                         RoundedCornerShape(10.dp)
@@ -765,7 +678,7 @@ fun LoginScreen(
                                     Brush.horizontalGradient(
                                         listOf(
                                             Color.Transparent,
-                                            Color(0xFF4B3CC8).copy(alpha = 0.25f),
+                                            Color(0xFFD4AF37).copy(alpha = 0.2f),
                                             Color.Transparent
                                         )
                                     )
@@ -773,35 +686,39 @@ fun LoginScreen(
                         )
 
                         // Register link
-                        Box(Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                navController.navigate(Routes.REGISTER)
-                            }, contentAlignment = Alignment.Center) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth()
+                                .clickable { navController.navigate(Routes.REGISTER) },
+                            contentAlignment = Alignment.Center
+                        ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(5.dp)
                             ) {
                                 Text(
-                                    "New crew member?",
-                                    color = Color(0xFF8C83E4).copy(alpha = 0.5f), fontSize = 13.sp
+                                    "New member?",
+                                    color = Color(0xFF8C83E4).copy(alpha = 0.5f),
+                                    fontSize = 13.sp
                                 )
                                 Text(
-                                    "REQUEST ACCESS",
-                                    color = Color(0xFF8B6DFF), fontSize = 13.sp,
-                                    fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp
+                                    "CREATE ACCOUNT",
+                                    color = Color(0xFF8B6DFF),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
                                 )
-                                Text("›", color = Color(0xFF8B6DFF), fontSize = 14.sp)
+                                Text("›", color = Color(0xFF8B6DFF), fontSize = 15.sp)
                             }
                         }
                     }
                 }
 
-                // HUD corner brackets on panel
+                // HUD brackets
                 Canvas(Modifier.matchParentSize()) {
-                    val s = 18f;
-                    val w = 1.5f;
-                    val c = Color(0xFF4B3CC8).copy(alpha = 0.4f)
+                    val s = 16f;
+                    val w = 1.4f
+                    val c = Color(0xFFD4AF37).copy(alpha = 0.3f)
                     drawLine(c, Offset(0f, s), Offset(0f, 0f), w)
                     drawLine(c, Offset(0f, 0f), Offset(s, 0f), w)
                     drawLine(c, Offset(size.width - s, 0f), Offset(size.width, 0f), w)
@@ -828,11 +745,8 @@ fun LoginScreen(
     }
 }
 
-// =============================================================================
-// LOGIN FIELD — constellation-styled input
-// =============================================================================
 @Composable
-private fun LoginField(
+private fun LgField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
@@ -844,7 +758,6 @@ private fun LoginField(
     visualTransformation: VisualTransformation
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        // Label row
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(5.dp)
@@ -856,35 +769,31 @@ private fun LoginField(
                     .background(if (active) accent else Color(0xFF252535))
             )
             Text(
-                label, color = if (active) accent.copy(alpha = 0.7f) else Color(0xFF252535),
-                fontSize = 9.sp, fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Bold, letterSpacing = 1.sp
+                label,
+                color = if (active) accent.copy(alpha = 0.75f) else Color(0xFF252535),
+                fontSize = 9.sp,
+                fontFamily = FontFamily.Monospace,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
             Box(
                 Modifier
-                    .width(12.dp)
+                    .width(10.dp)
                     .height(1.dp)
-                    .background(if (active) accent.copy(alpha = 0.35f) else Color(0xFF1A1A28))
+                    .background(if (active) accent.copy(alpha = 0.3f) else Color(0xFF1A1A28))
             )
-            if (active) {
-                Text(
-                    "● ONLINE", color = accent.copy(alpha = 0.5f), fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp
-                )
-            } else {
-                Text(
-                    "○ EMPTY", color = Color(0xFF252535), fontSize = 8.sp,
-                    fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp
-                )
-            }
+            Text(
+                if (active) "● SET" else "○ EMPTY",
+                color = if (active) accent.copy(alpha = 0.5f) else Color(0xFF252535),
+                fontSize = 8.sp,
+                fontFamily = FontFamily.Monospace,
+                letterSpacing = 0.5.sp
+            )
         }
-
         OutlinedTextField(
             value = value,
             onValueChange = onValueChange,
-            placeholder = {
-                Text(placeholder, color = Color(0xFF252535), fontSize = 14.sp)
-            },
+            placeholder = { Text(placeholder, color = Color(0xFF252535), fontSize = 14.sp) },
             leadingIcon = {
                 Icon(
                     icon, null, tint = if (active) accent else Color(0xFF252535),

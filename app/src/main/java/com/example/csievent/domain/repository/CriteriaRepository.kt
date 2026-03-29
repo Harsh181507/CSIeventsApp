@@ -13,4 +13,5 @@ interface CriteriaRepository {
         title: String,
         maxScore: Int
     ): Result<CriteriaResponseDto>
+    suspend fun deleteCriteria(criteriaId: Long): Result<Unit>
 }
