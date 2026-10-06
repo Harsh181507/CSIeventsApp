@@ -23,6 +23,11 @@ interface TeamApi {
     ): List<TeamResponseDto>
 
 
+    // Every team the logged-in student is in, across events
+    @GET("teams/my")
+    suspend fun getMyTeams(): List<TeamResponseDto>
+
+
     @GET("teams/event/{eventId}/my")
     suspend fun getMyTeam(
         @Path("eventId") eventId: Long

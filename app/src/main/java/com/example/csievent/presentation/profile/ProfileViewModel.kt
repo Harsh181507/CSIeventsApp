@@ -2,6 +2,8 @@ package com.example.csievent.presentation.profile
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.csievent.data.local.ThemeMode
+import com.example.csievent.data.local.ThemeSettings
 import com.example.csievent.data.local.TokenManager
 import com.example.csievent.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,11 +28,14 @@ data class ProfileState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val tokenManager:   TokenManager,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val themeSettings:  ThemeSettings
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ProfileState())
     val state: StateFlow<ProfileState> = _state.asStateFlow()
+
+    val themeMode: StateFlow<ThemeMode> = themeSettings.mode
 
     init {
         viewModelScope.launch {
@@ -44,10 +49,13 @@ class ProfileViewModel @Inject constructor(
             }
             userRepository.getMe().onSuccess { me ->
                 tokenManager.saveProfile(me.name, me.email)
+                tokenManager.saveUserId(me.id)
                 _state.update { it.copy(name = me.name, email = me.email, role = me.role) }
             }
         }
     }
+
+    fun setThemeMode(mode: ThemeMode) = themeSettings.setMode(mode)
 
     fun logout() {
         viewModelScope.launch {

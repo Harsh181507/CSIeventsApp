@@ -16,6 +16,10 @@ class EventRepositoryImpl @Inject constructor(
         eventApi.getAllEvents()
     }
 
+    override suspend fun getEvent(eventId: Long): Result<EventResponseDto> = apiCall {
+        eventApi.getEvent(eventId)
+    }
+
     override suspend fun createEvent(
         request: CreateEventRequestDto
     ): Result<EventResponseDto> = apiCall {

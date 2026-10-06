@@ -1,67 +1,99 @@
 package com.example.csievent.ui.theme
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
-// Used for: primary buttons, active states, key UI elements
-val Indigo10  = Color(0xFF0D0A2E)
-val Indigo20  = Color(0xFF1A1456)
-val Indigo30  = Color(0xFF271F7E)
-val Indigo40  = Color(0xFF3829A6)
-val Indigo50  = Color(0xFF4B3CC8)   // ← primary brand color
-val Indigo60  = Color(0xFF6B5FD6)
-val Indigo70  = Color(0xFF8C83E4)
-val Indigo80  = Color(0xFFAEA8EE)
-val Indigo90  = Color(0xFFD1CDF7)
-val Indigo95  = Color(0xFFE8E5FB)
-val Indigo99  = Color(0xFFF7F6FE)
+/**
+ * Colour tokens for the app. Screens use these (via [CsiTheme.colors]) instead
+ * of hard-coded colours, so dark and light mode stay consistent.
+ *
+ * Dark  = "Midnight Gold": near-black surfaces, gold actions — matches the CSI badge.
+ * Light = "Ledger": warm ivory surfaces, ink actions, gold highlights.
+ */
+@Immutable
+data class CsiColors(
+    val isDark: Boolean,
 
-// --- Secondary: Electric Violet ---
-// Used for: join code display, highlights, badges
-val Violet40  = Color(0xFF7C3AED)
-val Violet50  = Color(0xFF8B5CF6)
-val Violet80  = Color(0xFFC4B5FD)
-val Violet90  = Color(0xFFEDE9FE)
+    // Surfaces
+    val background: Color,
+    val surface: Color,
+    val raised: Color,
+    val line: Color,
 
-// --- Tertiary: Cyan ---
-// Used for: judge role indicators, success states
-val Cyan40    = Color(0xFF0891B2)
-val Cyan50    = Color(0xFF06B6D4)
-val Cyan80    = Color(0xFFA5F3FC)
-val Cyan90    = Color(0xFFCFFAFE)
+    // Text
+    val text: Color,
+    val textMuted: Color,
+    val textSubtle: Color,
 
-// --- Neutral: Cool Gray ---
-// Used for: surfaces, backgrounds, dividers
-val Gray5     = Color(0xFFF8F9FB)
-val Gray10    = Color(0xFFF1F3F7)
-val Gray15    = Color(0xFFE8EBF2)
-val Gray20    = Color(0xFFD8DCE8)
-val Gray30    = Color(0xFFB8BFCF)
-val Gray40    = Color(0xFF8B95AB)
-val Gray50    = Color(0xFF636D82)
-val Gray60    = Color(0xFF4A5568)
-val Gray70    = Color(0xFF374151)
-val Gray80    = Color(0xFF1F2937)
-val Gray90    = Color(0xFF111827)
-val Gray95    = Color(0xFF0A0F1A)
+    // Primary action (buttons, selected states)
+    val accent: Color,
+    val onAccent: Color,
 
-// --- Semantic: Success (Green) ---
-val Green40   = Color(0xFF059669)
-val Green50   = Color(0xFF10B981)
-val Green80   = Color(0xFFA7F3D0)
-val Green90   = Color(0xFFD1FAE5)
+    // Gold highlight (codes, scores, badges)
+    val highlight: Color,
+    val highlightContainer: Color,
+    val onHighlightContainer: Color,
+    val highlightBorder: Color,
 
-// --- Semantic: Error (Red) ---
-val Red40     = Color(0xFFDC2626)
-val Red50     = Color(0xFFEF4444)
-val Red80     = Color(0xFFFCA5A5)
-val Red90     = Color(0xFFFEE2E2)
+    // Status
+    val success: Color,
+    val successContainer: Color,
+    val danger: Color,
+    val dangerContainer: Color,
 
-// --- Semantic: Warning (Amber) ---
-val Amber40   = Color(0xFFD97706)
-val Amber50   = Color(0xFFF59E0B)
-val Amber80   = Color(0xFFFCD34D)
-val Amber90   = Color(0xFFFEF3C7)
+    // Results podium
+    val winnerContainer: Color,
+    val onWinnerContainer: Color,
+    val silver: Color,
+    val bronze: Color
+)
 
-// --- Pure ---
-val White     = Color(0xFFFFFFFF)
-val Black     = Color(0xFF000000)
+val MidnightGold = CsiColors(
+    isDark = true,
+    background = Color(0xFF0B0B0D),
+    surface = Color(0xFF151518),
+    raised = Color(0xFF1C1C21),
+    line = Color(0xFF2A2A31),
+    text = Color(0xFFF3F1EA),
+    textMuted = Color(0xFFA8A498),
+    textSubtle = Color(0xFF77746B),
+    accent = Color(0xFFE3B04B),
+    onAccent = Color(0xFF15120A),
+    highlight = Color(0xFFE3B04B),
+    highlightContainer = Color(0xFF2A2414),
+    onHighlightContainer = Color(0xFFE3B04B),
+    highlightBorder = Color(0xFF5C4A22),
+    success = Color(0xFF7FD9A6),
+    successContainer = Color(0xFF12301F),
+    danger = Color(0xFFF28B82),
+    dangerContainer = Color(0xFF3A1614),
+    winnerContainer = Color(0xFFE3B04B),
+    onWinnerContainer = Color(0xFF15120A),
+    silver = Color(0xFFCFCBC0),
+    bronze = Color(0xFFC99A6B)
+)
+
+val Ledger = CsiColors(
+    isDark = false,
+    background = Color(0xFFF6F4EF),
+    surface = Color(0xFFFFFFFF),
+    raised = Color(0xFFEFEBE3),
+    line = Color(0xFFE4DED2),
+    text = Color(0xFF17140F),
+    textMuted = Color(0xFF5F584D),
+    textSubtle = Color(0xFF8A8276),
+    accent = Color(0xFF17140F),
+    onAccent = Color(0xFFFFFFFF),
+    highlight = Color(0xFF8A5D0C),
+    highlightContainer = Color(0xFFF1E6CE),
+    onHighlightContainer = Color(0xFF6B4708),
+    highlightBorder = Color(0xFFD9C493),
+    success = Color(0xFF1E5C3D),
+    successContainer = Color(0xFFE1F0E6),
+    danger = Color(0xFFA33A1E),
+    dangerContainer = Color(0xFFFBE4DD),
+    winnerContainer = Color(0xFF17140F),
+    onWinnerContainer = Color(0xFFE2B65A),
+    silver = Color(0xFF6E6A62),
+    bronze = Color(0xFF9A5B2A)
+)

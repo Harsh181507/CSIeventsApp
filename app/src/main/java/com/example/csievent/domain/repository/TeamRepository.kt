@@ -12,6 +12,9 @@ interface TeamRepository {
     /** Returns all teams for a given event. */
     suspend fun getTeamsByEvent(eventId: Long): Result<List<TeamResponseDto>>
 
+    /** Every team the logged-in student is in, across events. */
+    suspend fun getMyTeams(): Result<List<TeamResponseDto>>
+
     /** Teams the logged-in judge should score in an event. */
     suspend fun getJudgeTeams(eventId: Long): Result<List<TeamResponseDto>>
 

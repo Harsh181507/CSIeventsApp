@@ -17,6 +17,10 @@ class TeamRepositoryImpl @Inject constructor(
         teamApi.getTeamsByEvent(eventId)
     }
 
+    override suspend fun getMyTeams(): Result<List<TeamResponseDto>> = apiCall {
+        teamApi.getMyTeams()
+    }
+
     override suspend fun getJudgeTeams(
         eventId: Long
     ): Result<List<TeamResponseDto>> = apiCall {

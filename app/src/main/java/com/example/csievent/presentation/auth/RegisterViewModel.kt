@@ -48,6 +48,7 @@ class RegisterViewModel @Inject constructor(
                     // 🔥 Save token like Login
                     tokenManager.saveToken(response.token, response.role)
                     tokenManager.saveProfile(response.name, response.email)
+                    tokenManager.saveUserId(response.userId)
 
                     _state.value = RegisterState(
                         token = response.token,

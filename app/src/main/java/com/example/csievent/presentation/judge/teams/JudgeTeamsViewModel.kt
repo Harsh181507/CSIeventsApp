@@ -3,6 +3,7 @@ package com.example.csievent.presentation.judge.teams
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csievent.domain.repository.CriteriaRepository
+import com.example.csievent.domain.repository.EventRepository
 import com.example.csievent.domain.repository.ScoreRepository
 import com.example.csievent.domain.repository.TeamRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class JudgeTeamsViewModel @Inject constructor(
     private val repository: TeamRepository,
     private val scoreRepository: ScoreRepository,
-    private val criteriaRepository: CriteriaRepository
+    private val criteriaRepository: CriteriaRepository,
+    private val eventRepository: EventRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(JudgeTeamsState())
@@ -35,6 +37,7 @@ class JudgeTeamsViewModel @Inject constructor(
 
             _state.update { it.copy(isLoading = true, error = null) }
 
+            val eventDeferred    = async { eventRepository.getEvent(eventId) }
             val teamsDeferred    = async { repository.getJudgeTeams(eventId) }
             val scoresDeferred   = async { scoreRepository.getScoresByJudge(eventId) }
             val criteriaDeferred = async { criteriaRepository.getCriteriaByEvent(eventId) }
@@ -42,31 +45,23 @@ class JudgeTeamsViewModel @Inject constructor(
             val teamsResult   = teamsDeferred.await()
             val scores        = scoresDeferred.await().getOrDefault(emptyList())
             val criteriaCount = criteriaDeferred.await().getOrNull()?.size ?: 0
+            val event         = eventDeferred.await().getOrNull()
 
             val scoredTeamIds = if (criteriaCount == 0) emptySet() else
                 scores.groupBy { it.teamId }
                     .filterValues { teamScores -> teamScores.map { it.criteriaId }.toSet().size >= criteriaCount }
                     .keys
 
-            teamsResult.fold(
-                onSuccess = { teams ->
-                    _state.update {
-                        it.copy(
-                            isLoading     = false,
-                            teams         = teams,
-                            scoredTeamIds = scoredTeamIds
-                        )
-                    }
-                },
-                onFailure = { error ->
-                    _state.update {
-                        it.copy(
-                            isLoading = false,
-                            error     = error.message ?: "Failed to load teams"
-                        )
-                    }
-                }
-            )
+            _state.update {
+                it.copy(
+                    isLoading     = false,
+                    event         = event ?: it.event,
+                    teams         = teamsResult.getOrDefault(it.teams),
+                    scoredTeamIds = scoredTeamIds,
+                    criteriaCount = criteriaCount,
+                    error         = teamsResult.exceptionOrNull()?.message
+                )
+            }
         }
     }
 }

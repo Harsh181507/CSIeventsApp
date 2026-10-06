@@ -1,65 +1,74 @@
 package com.example.csievent.presentation.profile
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.DeleteForever
-import androidx.compose.material.icons.filled.ExitToApp
-import androidx.compose.material.icons.filled.Policy
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.Logout
+import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Policy
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.csievent.data.local.ThemeMode
 import com.example.csievent.data.remote.api.ApiConstants
+import com.example.csievent.presentation.components.Avatar
+import com.example.csievent.presentation.components.ChipKind
+import com.example.csievent.presentation.components.CsiCard
+import com.example.csievent.presentation.components.CsiScreen
+import com.example.csievent.presentation.components.CsiTextField
+import com.example.csievent.presentation.components.CsiTopBar
+import com.example.csievent.presentation.components.SectionHeader
+import com.example.csievent.presentation.components.SegmentedTabs
+import com.example.csievent.presentation.components.StatusChip
 import com.example.csievent.presentation.navigation.Routes
-
-private val Bg        = Color(0xFF05040D)
-private val Card      = Color(0xFF0D0B1F)
-private val Line      = Color(0xFF2A2650)
-private val Accent    = Color(0xFF8C83E4)
-private val Danger    = Color(0xFFEF4444)
-private val TextMain  = Color(0xFFECEBF7)
-private val TextMuted = Color(0xFF9C99B8)
+import com.example.csievent.ui.theme.ControlShape
+import com.example.csievent.ui.theme.CsiTheme
 
 /**
- * Account screen for every role: who is logged in, privacy policy, logout and
- * permanent account deletion (Google Play requires in-app deletion for apps
- * that let users create accounts).
- *
- * File: app/src/main/java/com/example/csievent/presentation/profile/ProfileScreen.kt
+ * Account screen for every role: who is logged in, appearance, privacy
+ * policy, logout and permanent account deletion (Google Play requires
+ * in-app deletion for apps that let users create accounts).
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
+    val c = CsiTheme.colors
     val state by viewModel.state.collectAsState()
+    val themeMode by viewModel.themeMode.collectAsState()
     val uriHandler = LocalUriHandler.current
 
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -70,87 +79,69 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        containerColor = Bg,
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text("PROFILE", color = TextMain, fontSize = 14.sp, fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace, letterSpacing = 2.sp)
-                },
-                navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Accent)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Bg)
-            )
-        }
+    CsiScreen(
+        topBar = { CsiTopBar(title = "Profile", onBack = { navController.popBackStack() }) }
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-
-            // ── Avatar + identity ──────────────────────────────────────
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(Brush.linearGradient(listOf(Color(0xFF7C3AED), Color(0xFF4B3CC8))))
-                    .border(2.dp, Accent.copy(alpha = 0.6f), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    initials(state.name),
-                    color = Color.White, fontSize = 34.sp, fontWeight = FontWeight.Bold
-                )
-            }
-
-            Spacer(Modifier.height(16.dp))
-            Text(state.name.ifBlank { "—" }, color = TextMain, fontSize = 22.sp,
-                fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.height(4.dp))
-            Text(state.email, color = TextMuted, fontSize = 14.sp, textAlign = TextAlign.Center)
-
-            if (state.role.isNotBlank()) {
-                Spacer(Modifier.height(12.dp))
-                Box(
-                    Modifier
-                        .clip(RoundedCornerShape(50))
-                        .background(Accent.copy(alpha = 0.15f))
-                        .border(1.dp, Accent.copy(alpha = 0.5f), RoundedCornerShape(50))
-                        .padding(horizontal = 14.dp, vertical = 5.dp)
-                ) {
-                    Text(state.role, color = Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace, letterSpacing = 1.5.sp)
+            CsiCard {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Avatar(state.name.ifBlank { "?" }, size = 64, emphasized = true)
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(state.name.ifBlank { "—" }, style = MaterialTheme.typography.titleLarge, color = c.text)
+                        Text(state.email, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
+                        if (state.role.isNotBlank()) {
+                            StatusChip(state.role.lowercase().replaceFirstChar { it.uppercase() }, ChipKind.HIGHLIGHT)
+                        }
+                    }
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            SectionHeader("Appearance")
+            SegmentedTabs(
+                options = listOf("Dark", "Light", "Phone setting"),
+                selected = when (themeMode) {
+                    ThemeMode.DARK -> 0
+                    ThemeMode.LIGHT -> 1
+                    ThemeMode.SYSTEM -> 2
+                },
+                onSelect = { index ->
+                    viewModel.setThemeMode(
+                        when (index) {
+                            0 -> ThemeMode.DARK
+                            1 -> ThemeMode.LIGHT
+                            else -> ThemeMode.SYSTEM
+                        }
+                    )
+                }
+            )
 
-            // ── Actions ────────────────────────────────────────────────
-            ActionRow(Icons.Default.Policy, "Privacy policy", TextMain) {
-                uriHandler.openUri(ApiConstants.PRIVACY_POLICY_URL)
-            }
-            Spacer(Modifier.height(10.dp))
-            ActionRow(Icons.Default.ExitToApp, "Log out", TextMain) {
-                viewModel.logout()
-            }
-            Spacer(Modifier.height(10.dp))
-            ActionRow(Icons.Default.DeleteForever, "Delete account", Danger) {
-                viewModel.clearError()
-                showDeleteDialog = true
+            SectionHeader("Account", modifier = Modifier.padding(top = 8.dp))
+            CsiCard(padding = 4) {
+                ActionRow(Icons.Rounded.Policy, "Privacy policy", c.text) {
+                    uriHandler.openUri(ApiConstants.PRIVACY_POLICY_URL)
+                }
+                ActionRow(Icons.AutoMirrored.Rounded.Logout, "Log out", c.text) {
+                    viewModel.logout()
+                }
+                ActionRow(Icons.Rounded.DeleteForever, "Delete account", c.danger) {
+                    viewModel.clearError()
+                    showDeleteDialog = true
+                }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(8.dp))
             Text(
-                "CSI Events",
-                color = TextMuted.copy(alpha = 0.6f), fontSize = 12.sp
+                "CSI Events · CSI VIT-AP",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textSubtle,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }
@@ -172,19 +163,19 @@ fun ProfileScreen(
 
 @Composable
 private fun ActionRow(icon: ImageVector, label: String, color: Color, onClick: () -> Unit) {
+    val c = CsiTheme.colors
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(Card)
-            .border(1.dp, if (color == Danger) Danger.copy(alpha = 0.4f) else Line, RoundedCornerShape(14.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .clip(ControlShape)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = color)
-        Spacer(Modifier.width(14.dp))
-        Text(label, color = color, fontSize = 15.sp, fontWeight = FontWeight.Medium)
+        Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+        Text(label, style = MaterialTheme.typography.titleSmall, color = color, modifier = Modifier.weight(1f))
+        Icon(Icons.AutoMirrored.Rounded.KeyboardArrowRight, contentDescription = null, tint = c.textSubtle)
     }
 }
 
@@ -195,76 +186,46 @@ private fun DeleteAccountDialog(
     onConfirm: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val c = CsiTheme.colors
     var password by remember { mutableStateOf("") }
-    var visible by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = Card,
-        title = { Text("Delete your account?", color = TextMain) },
+        containerColor = c.surface,
+        title = { Text("Delete your account?", style = MaterialTheme.typography.titleLarge, color = c.text) },
         text = {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Text(
                     "This permanently deletes your account, your team memberships and any scores you gave. " +
                         "Teams you lead are passed to another member. This can't be undone.",
-                    color = TextMuted, fontSize = 14.sp
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = c.textMuted
                 )
-                Spacer(Modifier.height(16.dp))
-                OutlinedTextField(
+                CsiTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Password") },
-                    singleLine = true,
+                    label = "Password",
+                    isPassword = true,
                     enabled = !isDeleting,
-                    visualTransformation = if (visible) VisualTransformation.None else PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    trailingIcon = {
-                        IconButton(onClick = { visible = !visible }) {
-                            Icon(
-                                if (visible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                                contentDescription = if (visible) "Hide password" else "Show password",
-                                tint = TextMuted
-                            )
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = TextMain,
-                        unfocusedTextColor = TextMain,
-                        focusedBorderColor = Danger,
-                        unfocusedBorderColor = Line,
-                        focusedLabelColor = Danger,
-                        unfocusedLabelColor = TextMuted,
-                        cursorColor = Danger
-                    ),
-                    modifier = Modifier.fillMaxWidth()
+                    imeAction = ImeAction.Done,
+                    onImeAction = { onConfirm(password) },
+                    error = error
                 )
-                error?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it, color = Danger, fontSize = 13.sp)
-                }
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(password) }, enabled = !isDeleting) {
                 if (isDeleting) {
-                    CircularProgressIndicator(Modifier.size(18.dp), color = Danger, strokeWidth = 2.dp)
+                    CircularProgressIndicator(Modifier.size(18.dp), color = c.danger, strokeWidth = 2.dp)
                 } else {
-                    Text("Delete permanently", color = Danger, fontWeight = FontWeight.SemiBold)
+                    Text("Delete permanently", color = c.danger, style = MaterialTheme.typography.labelLarge)
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isDeleting) {
-                Text("Cancel", color = Accent)
+                Text("Cancel", color = c.textMuted, style = MaterialTheme.typography.labelLarge)
             }
         }
     )
 }
-
-private fun initials(name: String): String =
-    name.trim()
-        .split(Regex("\\s+"))
-        .filter { it.isNotEmpty() }
-        .take(2)
-        .joinToString("") { it.first().uppercase() }
-        .ifEmpty { "?" }

@@ -2,6 +2,7 @@ package com.example.csievent.data.local
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -24,6 +25,7 @@ class TokenManager @Inject constructor(
         private val ROLE_KEY = stringPreferencesKey("user_role")
         private val NAME_KEY = stringPreferencesKey("user_name")
         private val EMAIL_KEY = stringPreferencesKey("user_email")
+        private val USER_ID_KEY = longPreferencesKey("user_id")
     }
 
     // In-memory copy so the network interceptor doesn't read DataStore on every request
@@ -48,6 +50,12 @@ class TokenManager @Inject constructor(
             prefs[EMAIL_KEY] = email
         }
     }
+
+    suspend fun saveUserId(userId: Long) {
+        context.dataStore.edit { prefs -> prefs[USER_ID_KEY] = userId }
+    }
+
+    fun getUserId(): Flow<Long?> = context.dataStore.data.map { it[USER_ID_KEY] }
 
     suspend fun saveRole(role: String) {
         context.dataStore.edit { prefs -> prefs[ROLE_KEY] = role }

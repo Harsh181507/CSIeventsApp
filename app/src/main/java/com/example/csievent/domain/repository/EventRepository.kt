@@ -6,6 +6,7 @@ import com.example.csievent.data.remote.dto.event.JudgeEventResponseDto
 
 interface EventRepository {
     suspend fun getAllEvents(): Result<List<EventResponseDto>>
+    suspend fun getEvent(eventId: Long): Result<EventResponseDto>
     suspend fun createEvent(request: CreateEventRequestDto): Result<EventResponseDto>
     suspend fun lockScoring(eventId: Long): Result<String>
     suspend fun unlockScoring(eventId: Long): Result<String>

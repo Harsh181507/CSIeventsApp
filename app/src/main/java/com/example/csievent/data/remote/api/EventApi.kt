@@ -15,6 +15,11 @@ interface EventApi {
     @GET("events")
     suspend fun getAllEvents(): List<EventResponseDto>
 
+    @GET("events/{eventId}")
+    suspend fun getEvent(
+        @Path("eventId") eventId: Long
+    ): EventResponseDto
+
     @POST("events")
     suspend fun createEvent(
         @Body request: CreateEventRequestDto

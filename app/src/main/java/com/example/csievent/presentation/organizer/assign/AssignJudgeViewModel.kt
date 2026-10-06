@@ -25,7 +25,10 @@ data class AssignJudgeState(
     /** Judges already on this event and the teams they score. */
     val assignments: List<JudgeAssignmentDto> = emptyList(),
     val successMessage: String? = null,
-    val error: String? = null
+    /** An assign / remove action failed. */
+    val error: String? = null,
+    /** The screen's data couldn't be loaded. */
+    val loadError: String? = null
 )
 
 @HiltViewModel
@@ -41,7 +44,7 @@ class AssignJudgeViewModel @Inject constructor(
     fun loadData(eventId: Long) {
         viewModelScope.launch {
 
-            _state.update { it.copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, loadError = null) }
 
             val judgesDeferred      = async { userRepository.getAllJudges() }
             val teamsDeferred       = async { teamRepository.getTeamsByEvent(eventId) }
@@ -57,7 +60,7 @@ class AssignJudgeViewModel @Inject constructor(
                     judges      = judgesResult.getOrDefault(emptyList()),
                     teams       = teamsResult.getOrDefault(emptyList()),
                     assignments = assignmentsResult.getOrDefault(emptyList()),
-                    error       = (judgesResult.exceptionOrNull()
+                    loadError   = (judgesResult.exceptionOrNull()
                         ?: teamsResult.exceptionOrNull()
                         ?: assignmentsResult.exceptionOrNull())?.message
                 )

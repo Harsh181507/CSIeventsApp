@@ -7,12 +7,16 @@ import com.example.csievent.domain.repository.EventRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 data class CreateEventState(
     val isLoading: Boolean = false,
-    val success: Boolean = false,
+    /** Set once the event exists, so the screen can open it. */
+    val createdEventId: Long? = null,
     val error: String? = null
 )
 
@@ -22,38 +26,32 @@ class CreateEventViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CreateEventState())
-    val state: StateFlow<CreateEventState> = _state
+    val state: StateFlow<CreateEventState> = _state.asStateFlow()
 
+    /** [eventDate] is yyyy-MM-dd. */
     fun createEvent(
         title: String,
         description: String,
         eventDate: String,
         maxTeamSize: Int
     ) {
-        viewModelScope.launch {
+        if (_state.value.isLoading) return
 
-            _state.value = CreateEventState(isLoading = true)
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, error = null) }
 
             val request = CreateEventRequestDto(
-                title = title,
-                description = description,
+                title = title.trim(),
+                description = description.trim().ifBlank { null },
                 eventDate = eventDate,
                 maxTeamSize = maxTeamSize
             )
 
             repository.createEvent(request)
-                .onSuccess {
-                    _state.value = CreateEventState(success = true)
-                }
-                .onFailure {
-                    _state.value = CreateEventState(
-                        error = it.message ?: "Failed to create event"
-                    )
+                .onSuccess { event -> _state.update { it.copy(isLoading = false, createdEventId = event.id) } }
+                .onFailure { error ->
+                    _state.update { it.copy(isLoading = false, error = error.message ?: "Failed to create event") }
                 }
         }
-    }
-
-    fun clearState() {
-        _state.value = CreateEventState()
     }
 }
