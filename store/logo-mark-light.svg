@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="30.8 31 46 46">
+  <title>CSI Events mark, for light backgrounds</title>
+  <defs>
+    <linearGradient id="gold" gradientUnits="userSpaceOnUse" x1="35.1" y1="42.24" x2="64.5" y2="54">
+      <stop offset="0" stop-color="#C9952F"/>
+      <stop offset="1" stop-color="#8A5D0C"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke-width="4.45" stroke-linecap="round" stroke-linejoin="round">
+    <path stroke="#8A5D0C" stroke-opacity=".35" d="M35.1,37.2 H45.18 V47.28 H35.1 M45.18,42.24 H55.26 M35.1,60.72 H45.18 V70.8 H35.1 M45.18,65.76 H55.26 M55.26,42.24 V65.76 M55.26,54 H64.5"/>
+    <path stroke="url(#gold)" d="M35.1,47.28 H45.18 V42.24 H55.26 V54 H64.5"/>
+  </g>
+  <circle cx="69.96" cy="54" r="4.7" fill="#17140F"/>
+</svg>

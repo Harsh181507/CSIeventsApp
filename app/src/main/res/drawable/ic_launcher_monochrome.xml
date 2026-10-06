@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 13+ themed icon: the system tints this one colour, so depth comes from alpha only -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M35.1,37.2 H45.18 V47.28 H35.1 M45.18,42.24 H55.26 M35.1,60.72 H45.18 V70.8 H35.1 M45.18,65.76 H55.26 M55.26,42.24 V65.76 M55.26,54 H64.5"
+        android:strokeWidth="4.45"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeAlpha="0.45"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M35.1,47.28 H45.18 V42.24 H55.26 V54 H64.5"
+        android:strokeWidth="4.45"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M65.26,54 a4.7,4.7 0 1,0 9.4,0 a4.7,4.7 0 1,0 -9.4,0 Z"
+        android:fillColor="#FFFFFFFF" />
+</vector>
