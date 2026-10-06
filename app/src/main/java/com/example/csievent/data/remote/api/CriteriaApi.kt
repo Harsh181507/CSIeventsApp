@@ -2,6 +2,7 @@ package com.example.csievent.data.remote.api
 
 import com.example.csievent.data.remote.dto.criteria.CreateCriteriaRequestDto
 import com.example.csievent.data.remote.dto.criteria.CriteriaResponseDto
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -22,6 +23,6 @@ interface CriteriaApi {
     ): List<CriteriaResponseDto>
 
     @DELETE("criteria/{id}")
-    suspend fun deleteCriteria(@Path("id") criteriaId: Long)
+    suspend fun deleteCriteria(@Path("id") criteriaId: Long): ResponseBody
 
 }

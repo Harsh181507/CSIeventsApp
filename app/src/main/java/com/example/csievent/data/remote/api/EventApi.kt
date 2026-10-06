@@ -5,8 +5,10 @@ import com.example.csievent.data.remote.dto.event.EventResponseDto
 import com.example.csievent.data.remote.dto.event.JudgeEventResponseDto
 import okhttp3.ResponseBody
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface EventApi {
 
@@ -20,12 +22,22 @@ interface EventApi {
 
     @POST("events/{eventId}/lock")
     suspend fun lockScoring(
-        @retrofit2.http.Path("eventId") eventId: Long
+        @Path("eventId") eventId: Long
+    ): ResponseBody
+
+    @POST("events/{eventId}/unlock")
+    suspend fun unlockScoring(
+        @Path("eventId") eventId: Long
+    ): ResponseBody
+
+    @DELETE("events/{eventId}")
+    suspend fun deleteEvent(
+        @Path("eventId") eventId: Long
     ): ResponseBody
 
     @POST("events/{eventId}/register")
     suspend fun registerForEvent(
-        @retrofit2.http.Path("eventId") eventId: Long
+        @Path("eventId") eventId: Long
     ): ResponseBody
 
     @GET("events/judge")

@@ -208,12 +208,7 @@ fun SplashScreen(
         delay(1200)
 
         viewModel.checkAuth { role ->
-            val dest = when (role) {
-                "ORGANIZER" -> Routes.ORGANIZER_DASHBOARD
-                "JUDGE"     -> Routes.JUDGE_DASHBOARD
-                "STUDENT"   -> Routes.STUDENT_DASHBOARD
-                else        -> Routes.LOGIN
-            }
+            val dest = Routes.dashboardFor(role) ?: Routes.LOGIN
             navController.navigate(dest) {
                 popUpTo(Routes.SPLASH) { inclusive = true }
             }

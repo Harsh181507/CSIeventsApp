@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -173,6 +174,9 @@ fun JudgeDashboardScreen(
                     actions = {
                         IconButton(onClick = { viewModel.loadJudgeEvents() }) {
                             Icon(Icons.Default.Refresh, null, tint = gold.copy(alpha = 0.8f))
+                        }
+                        IconButton(onClick = { navController.navigate(Routes.PROFILE) }) {
+                            Icon(Icons.Default.AccountCircle, "Profile", tint = gold.copy(alpha = 0.8f))
                         }
                         IconButton(onClick = {
                             scope.launch {

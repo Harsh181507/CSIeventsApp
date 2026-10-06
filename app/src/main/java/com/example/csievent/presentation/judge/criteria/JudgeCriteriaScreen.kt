@@ -48,7 +48,7 @@ import kotlin.math.*
  *  1. User fills score into each rune stone (arc dial updates live)
  *  2. Validation runs per-card inline (red ring + message)
  *  3. Single "CAST VERDICT" button at the bottom validates all,
- *     then submits in parallel via submitAllScores()
+ *     then submits them in one request via submitAllScores()
  *  4. Button shows loading spinner during submission
  *  5. Toast appears, button glows gold on success
  */
@@ -223,7 +223,8 @@ fun JudgeCriteriaScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(pad),
+                    .padding(pad)
+                    .imePadding(),
                 contentPadding = PaddingValues(
                     start = 20.dp, end = 20.dp, top = 8.dp,
                     // Extra bottom padding so the last card clears the verdict button

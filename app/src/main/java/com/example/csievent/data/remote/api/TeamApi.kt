@@ -16,6 +16,12 @@ interface TeamApi {
         @Path("eventId") eventId: Long
     ): List<TeamResponseDto>
 
+    // Teams the logged-in judge should score in this event
+    @GET("judge/events/{eventId}/teams")
+    suspend fun getJudgeTeams(
+        @Path("eventId") eventId: Long
+    ): List<TeamResponseDto>
+
 
     @GET("teams/event/{eventId}/my")
     suspend fun getMyTeam(

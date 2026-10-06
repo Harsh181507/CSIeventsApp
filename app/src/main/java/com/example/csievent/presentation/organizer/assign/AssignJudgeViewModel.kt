@@ -2,21 +2,28 @@ package com.example.csievent.presentation.organizer.assign
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.csievent.data.remote.dto.judge.JudgeAssignmentDto
 import com.example.csievent.data.remote.dto.team.TeamResponseDto
 import com.example.csievent.data.remote.dto.user.UserResponseDto
 import com.example.csievent.domain.repository.JudgeAssignmentRepository
 import com.example.csievent.domain.repository.TeamRepository
 import com.example.csievent.domain.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class AssignJudgeState(
     val isLoading: Boolean = false,
+    val isSaving: Boolean = false,
     val judges: List<UserResponseDto> = emptyList(),
     val teams: List<TeamResponseDto> = emptyList(),
+    /** Judges already on this event and the teams they score. */
+    val assignments: List<JudgeAssignmentDto> = emptyList(),
     val successMessage: String? = null,
     val error: String? = null
 )
@@ -29,51 +36,80 @@ class AssignJudgeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AssignJudgeState())
-    val state: StateFlow<AssignJudgeState> = _state
+    val state: StateFlow<AssignJudgeState> = _state.asStateFlow()
 
     fun loadData(eventId: Long) {
         viewModelScope.launch {
 
-            _state.value = _state.value.copy(isLoading = true)
+            _state.update { it.copy(isLoading = true, error = null) }
 
-            val judgesResult = userRepository.getAllJudges()
-            val teamsResult = teamRepository.getTeamsByEvent(eventId)
+            val judgesDeferred      = async { userRepository.getAllJudges() }
+            val teamsDeferred       = async { teamRepository.getTeamsByEvent(eventId) }
+            val assignmentsDeferred = async { assignmentRepository.getAssignments(eventId) }
 
-            _state.value = AssignJudgeState(
-                isLoading = false,
-                judges = judgesResult.getOrDefault(emptyList()),
-                teams = teamsResult.getOrDefault(emptyList())
-            )
+            val judgesResult      = judgesDeferred.await()
+            val teamsResult       = teamsDeferred.await()
+            val assignmentsResult = assignmentsDeferred.await()
+
+            _state.update {
+                it.copy(
+                    isLoading   = false,
+                    judges      = judgesResult.getOrDefault(emptyList()),
+                    teams       = teamsResult.getOrDefault(emptyList()),
+                    assignments = assignmentsResult.getOrDefault(emptyList()),
+                    error       = (judgesResult.exceptionOrNull()
+                        ?: teamsResult.exceptionOrNull()
+                        ?: assignmentsResult.exceptionOrNull())?.message
+                )
+            }
         }
     }
 
-    fun assignJudge(eventId: Long, judgeId: Long, teamId: Long?) {
+    /**
+     * Sets the teams [judgeId] scores in this event. An empty [teamIds] list
+     * lets the judge score every team (including teams formed later).
+     */
+    fun assignJudge(eventId: Long, judgeId: Long, teamIds: List<Long>) {
+        if (_state.value.isSaving) return
+
         viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, error = null) }
 
-            val result = assignmentRepository.assignJudge(eventId, judgeId, teamId)
-
-            result.fold(
-                onSuccess = {
-                    _state.value = _state.value.copy(
-                        successMessage = it
-                    )
-                },
-                onFailure = {
-                    _state.value = _state.value.copy(
-                        error = it.message
-                    )
+            assignmentRepository.assignJudge(eventId, judgeId, teamIds)
+                .onSuccess { message ->
+                    refreshAssignments(eventId)
+                    _state.update { it.copy(isSaving = false, successMessage = message) }
                 }
-            )
+                .onFailure { error ->
+                    _state.update { it.copy(isSaving = false, error = error.message) }
+                }
+        }
+    }
+
+    fun removeJudge(eventId: Long, judgeId: Long) {
+        if (_state.value.isSaving) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, error = null) }
+
+            assignmentRepository.removeJudge(eventId, judgeId)
+                .onSuccess { message ->
+                    refreshAssignments(eventId)
+                    _state.update { it.copy(isSaving = false, successMessage = message) }
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isSaving = false, error = error.message) }
+                }
+        }
+    }
+
+    private suspend fun refreshAssignments(eventId: Long) {
+        assignmentRepository.getAssignments(eventId).onSuccess { list ->
+            _state.update { it.copy(assignments = list) }
         }
     }
 
     fun clearMessage() {
-        _state.value = _state.value.copy(
-            successMessage = null,
-            error = null
-        )
+        _state.update { it.copy(successMessage = null, error = null) }
     }
 }
-
-
-//Check 1 2 3

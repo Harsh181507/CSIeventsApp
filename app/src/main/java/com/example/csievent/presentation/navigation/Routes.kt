@@ -13,6 +13,9 @@ object Routes {
     const val JUDGE_DASHBOARD     = "judge_dashboard"
     const val ORGANIZER_DASHBOARD = "organizer_dashboard"
 
+    // Any role
+    const val PROFILE = "profile"
+
     // Organizer
     const val CREATE_EVENT            = "create_event"
     const val ORGANIZER_EVENT_DETAILS = "organizer_event_details"
@@ -26,4 +29,12 @@ object Routes {
     // Judge
     const val JUDGE_EVENT_TEAMS = "judge_event_teams"
     const val JUDGE_CRITERIA    = "judge_criteria"
+
+    /** Home screen for a role, or null if the app has no screens for it. */
+    fun dashboardFor(role: String?): String? = when (role) {
+        "STUDENT"   -> STUDENT_DASHBOARD
+        "JUDGE"     -> JUDGE_DASHBOARD
+        "ORGANIZER" -> ORGANIZER_DASHBOARD
+        else        -> null
+    }
 }

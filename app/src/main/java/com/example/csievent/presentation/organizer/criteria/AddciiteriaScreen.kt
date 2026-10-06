@@ -296,7 +296,8 @@ fun AddCriteriaScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(pad),
+                    .padding(pad)
+                    .imePadding(),
                 contentPadding = PaddingValues(bottom = 32.dp)
             ) {
 

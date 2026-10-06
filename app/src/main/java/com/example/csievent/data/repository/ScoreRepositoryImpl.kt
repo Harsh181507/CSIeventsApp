@@ -1,6 +1,8 @@
 package com.example.csievent.data.repository
 
 import com.example.csievent.data.remote.api.ScoreApi
+import com.example.csievent.data.remote.apiCall
+import com.example.csievent.data.remote.dto.score.BatchScoreRequestDto
 import com.example.csievent.data.remote.dto.score.LeaderboardResponseDto
 import com.example.csievent.data.remote.dto.score.ScoreResponseDto
 import com.example.csievent.data.remote.dto.score.SubmitScoreRequestDto
@@ -16,7 +18,7 @@ class ScoreRepositoryImpl @Inject constructor(
         teamId:     Long,
         criteriaId: Long,
         scoreValue: Int
-    ): Result<String> = runCatching {
+    ): Result<String> = apiCall {
         scoreApi.submitScore(
             SubmitScoreRequestDto(
                 teamId     = teamId,
@@ -26,13 +28,33 @@ class ScoreRepositoryImpl @Inject constructor(
         ).string()
     }
 
-    override suspend fun getScoresByJudge(): Result<List<ScoreResponseDto>> = runCatching {
-        scoreApi.getScoresByJudge()
+    override suspend fun submitScores(
+        teamId: Long,
+        scores: Map<Long, Int>
+    ): Result<String> = apiCall {
+        scoreApi.submitScores(
+            BatchScoreRequestDto(
+                teamId = teamId,
+                scores = scores.map { (criteriaId, value) ->
+                    BatchScoreRequestDto.Entry(criteriaId, value)
+                }
+            )
+        ).string()
+    }
+
+    override suspend fun getScoresByJudge(eventId: Long?): Result<List<ScoreResponseDto>> = apiCall {
+        scoreApi.getScoresByJudge(eventId)
     }
 
     override suspend fun getLeaderboard(
         eventId: Long
-    ): Result<List<LeaderboardResponseDto>> = runCatching {
+    ): Result<List<LeaderboardResponseDto>> = apiCall {
         scoreApi.getLeaderboard(eventId)
+    }
+
+    override suspend fun getPublicLeaderboard(
+        eventId: Long
+    ): Result<List<LeaderboardResponseDto>> = apiCall {
+        scoreApi.getPublicLeaderboard(eventId)
     }
 }

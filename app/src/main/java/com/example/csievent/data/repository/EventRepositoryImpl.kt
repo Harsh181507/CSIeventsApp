@@ -1,6 +1,7 @@
 package com.example.csievent.data.repository
 
 import com.example.csievent.data.remote.api.EventApi
+import com.example.csievent.data.remote.apiCall
 import com.example.csievent.data.remote.dto.event.CreateEventRequestDto
 import com.example.csievent.data.remote.dto.event.EventResponseDto
 import com.example.csievent.data.remote.dto.event.JudgeEventResponseDto
@@ -11,49 +12,33 @@ class EventRepositoryImpl @Inject constructor(
     private val eventApi: EventApi
 ) : EventRepository {
 
-    override suspend fun getAllEvents(): Result<List<EventResponseDto>> {
-        return try {
-            val response = eventApi.getAllEvents()
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun getAllEvents(): Result<List<EventResponseDto>> = apiCall {
+        eventApi.getAllEvents()
     }
 
     override suspend fun createEvent(
         request: CreateEventRequestDto
-    ): Result<EventResponseDto> {
-        return try {
-            val response = eventApi.createEvent(request)
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    ): Result<EventResponseDto> = apiCall {
+        eventApi.createEvent(request)
     }
 
-    override suspend fun lockScoring(eventId: Long): Result<String> {
-        return try {
-            val response = eventApi.lockScoring(eventId)
-            Result.success(response.string())   // ← convert ResponseBody to String
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    override suspend fun registerForEvent(eventId: Long): Result<String> {
-        return try {
-            Result.success(eventApi.registerForEvent(eventId).string())
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-    override suspend fun getJudgeEvents(): Result<List<JudgeEventResponseDto>> {
-        return try {
-            val response = eventApi.getJudgeEvents()
-            Result.success(response)
-        }catch (e:Exception){
-            Result.failure(e)
-        }
+    override suspend fun lockScoring(eventId: Long): Result<String> = apiCall {
+        eventApi.lockScoring(eventId).string()   // ← convert ResponseBody to String
     }
 
+    override suspend fun unlockScoring(eventId: Long): Result<String> = apiCall {
+        eventApi.unlockScoring(eventId).string()
+    }
 
+    override suspend fun deleteEvent(eventId: Long): Result<String> = apiCall {
+        eventApi.deleteEvent(eventId).string()
+    }
+
+    override suspend fun registerForEvent(eventId: Long): Result<String> = apiCall {
+        eventApi.registerForEvent(eventId).string()
+    }
+
+    override suspend fun getJudgeEvents(): Result<List<JudgeEventResponseDto>> = apiCall {
+        eventApi.getJudgeEvents()
+    }
 }

@@ -357,6 +357,7 @@ fun JudgeTeamsScreen(
                         team = team,
                         index = index,
                         eventId = eventId,
+                        scored = team.id in state.scoredTeamIds,
                         navController = navController
                     )
                 }
@@ -372,6 +373,7 @@ private fun SoulVesselCard(
     team: TeamResponseDto,
     index: Int,
     eventId: Long,
+    scored: Boolean,
     navController: NavHostController
 ) {
     val inf = rememberInfiniteTransition(label = "soul_$index")
@@ -443,7 +445,7 @@ private fun SoulVesselCard(
                         )
                     ), RoundedCornerShape(24.dp)
                 )
-                .pointerInput(Unit) {
+                .pointerInput(team.id) {
                     detectTapGestures(
                         onPress = { pressed = true; tryAwaitRelease(); pressed = false },
                         onTap = { navController.navigate("${Routes.JUDGE_CRITERIA}/$eventId/${team.id}") }
@@ -583,7 +585,8 @@ private fun SoulVesselCard(
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            "PASS JUDGMENT  ▶", color = soulCore, fontSize = 10.sp,
+                            if (scored) "✓ SCORED · EDIT  ▶" else "PASS JUDGMENT  ▶",
+                            color = if (scored) Color(0xFF69FF89) else soulCore, fontSize = 10.sp,
                             fontWeight = FontWeight.Bold, letterSpacing = 1.sp
                         )
                     }

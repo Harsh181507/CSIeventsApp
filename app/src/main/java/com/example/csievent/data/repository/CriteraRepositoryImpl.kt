@@ -1,6 +1,7 @@
 package com.example.csievent.data.repository
 
 import com.example.csievent.data.remote.api.CriteriaApi
+import com.example.csievent.data.remote.apiCall
 import com.example.csievent.data.remote.dto.criteria.CreateCriteriaRequestDto
 import com.example.csievent.data.remote.dto.criteria.CriteriaResponseDto
 import com.example.csievent.domain.repository.CriteriaRepository
@@ -14,34 +15,17 @@ class CriteriaRepositoryImpl @Inject constructor(
         eventId: Long,
         title: String,
         maxScore: Int
-    ): Result<CriteriaResponseDto> {
-        return try {
-            val response = criteriaApi.createCriteria(
-                CreateCriteriaRequestDto(eventId, title, maxScore)
-            )
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    ): Result<CriteriaResponseDto> = apiCall {
+        criteriaApi.createCriteria(CreateCriteriaRequestDto(eventId, title, maxScore))
     }
 
     override suspend fun getCriteriaByEvent(
         eventId: Long
-    ): Result<List<CriteriaResponseDto>> {
-        return try {
-            val response = criteriaApi.getCriteriaByEvent(eventId)
-            Result.success(response)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    ): Result<List<CriteriaResponseDto>> = apiCall {
+        criteriaApi.getCriteriaByEvent(eventId)
     }
 
-    override suspend fun deleteCriteria(criteriaId: Long): Result<Unit> {
-        return try {
-            criteriaApi.deleteCriteria(criteriaId)
-            Result.success(Unit)
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
+    override suspend fun deleteCriteria(criteriaId: Long): Result<Unit> = apiCall {
+        criteriaApi.deleteCriteria(criteriaId).close()
     }
 }

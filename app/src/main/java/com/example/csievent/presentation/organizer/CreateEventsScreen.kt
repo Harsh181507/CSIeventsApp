@@ -74,12 +74,14 @@ fun CreateEventScreen(
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var maxTeamSize by remember { mutableStateOf(4) }
-    var selYear by remember { mutableStateOf(2026) }
-    var selMonth by remember { mutableStateOf(6) }
-    var selDay by remember { mutableStateOf(15) }
+    val today = remember { java.time.LocalDate.now() }
+    var selYear by remember { mutableStateOf(today.year) }
+    var selMonth by remember { mutableStateOf(today.monthValue) }
+    var selDay by remember { mutableStateOf(today.dayOfMonth) }
     var showDate by remember { mutableStateOf(false) }
 
-    val eventDate = "%04d-%02d-%02d".format(selYear, selMonth, selDay)
+    val eventDate = String.format(java.util.Locale.US, "%04d-%02d-%02d", selYear, selMonth, selDay)
+    val isPastDate = java.time.LocalDate.of(selYear, selMonth, selDay).isBefore(today)
     val displayDate = "${NF_MS[selMonth - 1]} $selDay, $selYear"
 
     val f1 = title.isNotBlank()
@@ -325,6 +327,7 @@ fun CreateEventScreen(
                 Modifier
                     .fillMaxSize()
                     .padding(pad)
+                    .imePadding()
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
@@ -952,7 +955,7 @@ fun CreateEventScreen(
 
                     // ── LAUNCH BUTTON ─────────────────────────────────
                     Spacer(Modifier.height(6.dp))
-                    val canGo = f1 && lPhase == 0
+                    val canGo = f1 && !isPastDate && lPhase == 0
                     Box(
                         Modifier
                             .fillMaxWidth()
@@ -1021,7 +1024,7 @@ fun CreateEventScreen(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     Text(
-                                        "ENTER MISSION TITLE FIRST",
+                                        if (isPastDate) "PICK A DATE FROM TODAY ON" else "ENTER MISSION TITLE FIRST",
                                         color = Color(0xFF2A2040), fontSize = 13.sp,
                                         fontFamily = FontFamily.Monospace, letterSpacing = 0.5.sp
                                     )
@@ -1492,7 +1495,8 @@ private fun NfDatePicker(
                             Modifier.horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            (2025..2030).forEach { n ->
+                            val thisYear = java.time.LocalDate.now().year
+                            (thisYear..thisYear + 4).forEach { n ->
                                 val sel = n == sY
                                 Box(
                                     Modifier

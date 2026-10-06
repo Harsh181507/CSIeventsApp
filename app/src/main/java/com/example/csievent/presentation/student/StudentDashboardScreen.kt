@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
@@ -225,6 +226,9 @@ fun StudentDashboardScreen(
                     actions = {
                         IconButton(onClick = { viewModel.fetchEvents() }) {
                             Icon(Icons.Default.Refresh, null, tint = Color(0xFF8C83E4))
+                        }
+                        IconButton(onClick = { navController.navigate(Routes.PROFILE) }) {
+                            Icon(Icons.Default.AccountCircle, "Profile", tint = Color(0xFF8C83E4))
                         }
                         IconButton(onClick = {
                             scope.launch {
@@ -515,7 +519,7 @@ private fun PlanetEventCard(
                     ),
                     shape = RoundedCornerShape(28.dp)
                 )
-                .pointerInput(Unit) {
+                .pointerInput(event.id, isLocked) {
                     detectTapGestures(
                         onPress = {
                             pressedState = true
@@ -523,9 +527,11 @@ private fun PlanetEventCard(
                             pressedState = false
                         },
                         onTap = {
+                            rippleActive = true
                             if (!isLocked) {
-                                rippleActive = true
                                 navController.navigate("${Routes.STUDENT_TEAMS}/${event.id}")
+                            } else {
+                                navController.navigate("${Routes.LEADERBOARD}/${event.id}")
                             }
                         }
                     )
@@ -682,7 +688,7 @@ private fun PlanetEventCard(
                                 )
                         )
                         Text(
-                            if (isLocked) "SCORING LOCKED" else "OPEN FOR TEAMS",
+                            if (isLocked) "RESULTS OUT · TAP TO VIEW" else "OPEN FOR TEAMS",
                             color      = if (isLocked) Color(0xFFEF4444).copy(alpha = 0.5f)
                             else Color(0xFF10B981),
                             fontSize   = 10.sp,

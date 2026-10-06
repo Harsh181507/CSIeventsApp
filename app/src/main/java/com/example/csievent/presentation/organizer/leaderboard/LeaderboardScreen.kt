@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -53,6 +54,7 @@ private val REST_COL = Color(0xFF4B3CC8)   // indigo
 @Composable
 fun LeaderboardScreen(
     eventId: Long,
+    onBack: () -> Unit = {},
     viewModel: LeaderboardViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -112,7 +114,7 @@ fun LeaderboardScreen(
 
     val top3 = state.leaderboard.take(3)
     val rest = state.leaderboard.drop(3)
-    val maxScore = state.leaderboard.maxOfOrNull { it.totalScore } ?: 1
+    val maxScore = state.leaderboard.maxOfOrNull { it.totalScore }?.takeIf { it > 0 } ?: 1.0
 
     Box(Modifier
         .fillMaxSize()
@@ -194,6 +196,11 @@ fun LeaderboardScreen(
                                 "Mission Score Board",
                                 color = Color(0xFF8C83E4).copy(alpha = 0.5f), fontSize = 10.sp
                             )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.Default.ArrowBack, "Back", tint = Color(0xFF8C83E4))
                         }
                     },
                     actions = {
@@ -520,7 +527,7 @@ fun LeaderboardScreen(
                                         modifier = Modifier.width(88.dp)
                                     )
                                     Text(
-                                        "${top3[0].totalScore} pts",
+                                        "${formatScore(top3[0].totalScore)} pts",
                                         color = RANK_1_COL.copy(alpha = 0.7f), fontSize = 10.sp,
                                         fontFamily = FontFamily.Monospace
                                     )
@@ -543,7 +550,7 @@ fun LeaderboardScreen(
                                         modifier = Modifier.width(80.dp)
                                     )
                                     Text(
-                                        "${top3[1].totalScore} pts",
+                                        "${formatScore(top3[1].totalScore)} pts",
                                         color = RANK_2_COL.copy(alpha = 0.7f), fontSize = 9.sp,
                                         fontFamily = FontFamily.Monospace
                                     )
@@ -566,7 +573,7 @@ fun LeaderboardScreen(
                                         modifier = Modifier.width(80.dp)
                                     )
                                     Text(
-                                        "${top3[2].totalScore} pts",
+                                        "${formatScore(top3[2].totalScore)} pts",
                                         color = RANK_3_COL.copy(alpha = 0.7f), fontSize = 9.sp,
                                         fontFamily = FontFamily.Monospace
                                     )
@@ -697,7 +704,7 @@ fun LeaderboardScreen(
 
                 // ── ALL RANK CARDS ────────────────────────────────────
                 if (!state.isLoading) {
-                    itemsIndexed(state.leaderboard, key = { _, e -> e.rank }) { _, entry ->
+                    itemsIndexed(state.leaderboard, key = { _, e -> e.teamId }) { _, entry ->
                         Box(Modifier
                             .padding(horizontal = 20.dp)
                             .padding(bottom = 10.dp)) {
@@ -718,7 +725,7 @@ fun LeaderboardScreen(
 @Composable
 private fun LbRankCard(
     entry: LeaderboardResponseDto,
-    maxScore: Long
+    maxScore: Double
 ) {
     val rank = entry.rank
     val accent = when (rank) {
@@ -844,7 +851,7 @@ private fun LbRankCard(
                     // Score
                     Column(horizontalAlignment = Alignment.End) {
                         Text(
-                            "${entry.totalScore}", color = accent, fontSize = 22.sp,
+                            "${formatScore(entry.totalScore)}", color = accent, fontSize = 22.sp,
                             fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp
                         )
                         Text(
@@ -920,3 +927,8 @@ private fun LbRankCard(
         }
     }
 }
+
+/** 19.0 -> "19", 18.5 -> "18.5", 18.333 -> "18.33" */
+private fun formatScore(score: Double): String =
+    if (score % 1.0 == 0.0) score.toLong().toString()
+    else String.format(java.util.Locale.US, "%.2f", score).trimEnd('0').trimEnd('.')

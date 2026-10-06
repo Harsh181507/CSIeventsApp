@@ -66,12 +66,7 @@ fun RegisterScreen(
         state.role?.let { role ->
             success = true
             delay(1200)
-            val dest = when (role) {
-                "STUDENT" -> Routes.STUDENT_DASHBOARD
-                "JUDGE" -> Routes.JUDGE_DASHBOARD
-                "ORGANIZER" -> Routes.ORGANIZER_DASHBOARD
-                else -> Routes.LOGIN
-            }
+            val dest = Routes.dashboardFor(role) ?: Routes.LOGIN
             navController.navigate(dest) { popUpTo(Routes.LOGIN) { inclusive = true } }
         }
     }
@@ -211,6 +206,8 @@ fun RegisterScreen(
         Column(
             Modifier
                 .fillMaxSize()
+                .systemBarsPadding()
+                .imePadding()
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -680,7 +677,7 @@ fun RegisterScreen(
                         Box(
                             Modifier
                                 .fillMaxWidth()
-                                .clickable { navController.navigate(Routes.LOGIN) },
+                                .clickable { if (!navController.popBackStack()) navController.navigate(Routes.LOGIN) },
                             contentAlignment = Alignment.Center
                         ) {
                             Row(

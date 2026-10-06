@@ -133,12 +133,12 @@ fun CSIEventTheme(
         SideEffect {
             val window = (view.context as Activity).window
 
-            // Make status bar transparent so content draws behind it
-            window.statusBarColor = colorScheme.background.toArgb()
-
-            // Light status bar icons on light theme, dark icons on dark theme
-            WindowCompat.getInsetsController(window, view)
-                .isAppearanceLightStatusBars = !darkTheme
+            // Every screen has a dark background (edge-to-edge, set up in
+            // MainActivity), so system bar icons are always light
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = false
+                isAppearanceLightNavigationBars = false
+            }
         }
     }
 

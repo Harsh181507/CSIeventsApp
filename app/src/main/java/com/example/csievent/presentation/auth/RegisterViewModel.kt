@@ -25,6 +25,17 @@ class RegisterViewModel @Inject constructor(
         password: String
     ) {
 
+        if (_state.value.isLoading) return
+
+        if (name.isBlank() || email.isBlank() || password.isBlank()) {
+            _state.value = RegisterState(error = "Fill in your name, email and password")
+            return
+        }
+        if (password.length < 6) {
+            _state.value = RegisterState(error = "Password must be at least 6 characters")
+            return
+        }
+
         viewModelScope.launch {
 
             _state.value = RegisterState(isLoading = true)
@@ -36,6 +47,7 @@ class RegisterViewModel @Inject constructor(
 
                     // 🔥 Save token like Login
                     tokenManager.saveToken(response.token, response.role)
+                    tokenManager.saveProfile(response.name, response.email)
 
                     _state.value = RegisterState(
                         token = response.token,

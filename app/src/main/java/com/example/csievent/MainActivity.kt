@@ -1,8 +1,11 @@
 package com.example.csievent
 
+import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.rememberNavController
 import com.example.csievent.data.local.AuthEvent
@@ -46,6 +49,12 @@ class MainActivity : ComponentActivity() {
     lateinit var authStateManager: AuthStateManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Draw behind transparent system bars (required from Android 15);
+        // screens add their own insets padding
+        enableEdgeToEdge(
+            statusBarStyle     = SystemBarStyle.dark(Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT)
+        )
         super.onCreate(savedInstanceState)
 
         setContent {

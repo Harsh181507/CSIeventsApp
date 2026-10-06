@@ -9,11 +9,13 @@ import com.example.csievent.presentation.auth.RegisterScreen
 import com.example.csievent.presentation.judge.JudgeDashboardScreen
 import com.example.csievent.presentation.judge.criteria.JudgeCriteriaScreen
 import com.example.csievent.presentation.judge.teams.JudgeTeamsScreen
+import com.example.csievent.presentation.organizer.CreateEventScreen
 import com.example.csievent.presentation.organizer.OrganizerDashboardScreen
 import com.example.csievent.presentation.organizer.assign.AssignJudgeScreen
-import com.example.csievent.presentation.organizer.events.OrganizerEventDetailsScreen
+import com.example.csievent.presentation.organizer.criteria.AddCriteriaScreen
 import com.example.csievent.presentation.organizer.leaderboard.LeaderboardScreen
 import com.example.csievent.presentation.organizer.roles.RoleManagementScreen
+import com.example.csievent.presentation.profile.ProfileScreen
 import com.example.csievent.presentation.splash.SplashScreen
 import com.example.csievent.presentation.student.StudentDashboardScreen
 import com.example.csievent.presentation.student.teams.StudentTeamsScreen
@@ -40,17 +42,23 @@ fun AppNavGraph(navController: NavHostController) {
             RegisterScreen(navController = navController)
         }
 
+        composable(Routes.PROFILE) {
+            ProfileScreen(navController = navController)
+        }
+
         composable(Routes.ORGANIZER_DASHBOARD) {
             OrganizerDashboardScreen(navController = navController)
         }
 
+        composable(Routes.CREATE_EVENT) {
+            CreateEventScreen(navController = navController)
+        }
 
-
-
+        // Criteria management for an event
         composable("${Routes.ORGANIZER_EVENT_DETAILS}/{eventId}") { back ->
             val eventId = back.arguments?.getString("eventId")?.toLongOrNull()
                 ?: return@composable
-            OrganizerEventDetailsScreen(
+            AddCriteriaScreen(
                 eventId       = eventId,
                 navController = navController
             )
@@ -68,7 +76,10 @@ fun AppNavGraph(navController: NavHostController) {
         composable("${Routes.LEADERBOARD}/{eventId}") { back ->
             val eventId = back.arguments?.getString("eventId")?.toLongOrNull()
                 ?: return@composable
-            LeaderboardScreen(eventId = eventId)
+            LeaderboardScreen(
+                eventId = eventId,
+                onBack  = { navController.popBackStack() }
+            )
         }
 
         // NEW — Role Management screen

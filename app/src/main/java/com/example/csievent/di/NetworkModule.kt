@@ -9,6 +9,7 @@ import com.example.csievent.data.remote.api.ScoreApi
 import com.example.csievent.data.remote.api.TeamApi
 import com.example.csievent.data.remote.api.UserApi
 import com.example.csievent.data.remote.interceptor.AuthInterceptor
+import com.example.csievent.data.remote.interceptor.RetryInterceptor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
 
@@ -25,7 +27,8 @@ import javax.inject.Singleton
 object NetworkModule {
 
 
-    private const val BASE_URL = "https://csieventmangement.onrender.com/"
+    // Set in app/build.gradle.kts (can be overridden for debug builds)
+    private val BASE_URL = BuildConfig.BASE_URL
 
 
     @Provides
@@ -45,11 +48,18 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         authInterceptor:    AuthInterceptor,        // attaches JWT Bearer token
+        retryInterceptor:   RetryInterceptor,       // retries GETs while server wakes up
         loggingInterceptor: HttpLoggingInterceptor  // logs requests/responses
     ): OkHttpClient {
         return OkHttpClient.Builder()
+            // Generous timeouts: a sleeping Render instance can take ~1 min to wake
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(60, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(90, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)        // 1st: add auth header
-            .addInterceptor(loggingInterceptor)     // 2nd: log the final request
+            .addInterceptor(retryInterceptor)       // 2nd: retry 502/503/504 on GET
+            .addInterceptor(loggingInterceptor)     // 3rd: log the final request
             .build()
     }
 

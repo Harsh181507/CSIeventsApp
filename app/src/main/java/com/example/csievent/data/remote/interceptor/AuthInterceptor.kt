@@ -2,7 +2,6 @@ package com.example.csievent.data.remote.interceptor
 
 import com.example.csievent.data.local.AuthStateManager
 import com.example.csievent.data.local.TokenManager
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
@@ -17,20 +16,13 @@ import javax.inject.Inject
  * 2. **Detect 401 Unauthorized** — if the server responds with HTTP 401
  *    (expired or invalid token), clears the token from DataStore and notifies
  *    [AuthStateManager] so that [MainActivity] can redirect to the Login screen.
+ *    Login/register calls are excluded: a 401 there just means a wrong password.
  *
- * Why [runBlocking] here?
- * OkHttp interceptors are synchronous — they run on a thread pool and cannot
- * directly call suspend functions. [runBlocking] creates a coroutine scope on
- * the current thread for the DataStore read. The DataStore read is very fast
- * (it reads from an in-memory cache after the first access) so this does NOT
- * cause ANRs. This is the standard approach documented in the OkHttp and
- * Android DataStore guides.
+ * [TokenManager.currentTokenBlocking] keeps the token in memory, so only the
+ * very first request reads DataStore.
  *
  * Reference — OkHttp interceptors:
  * https://square.github.io/okhttp/features/interceptors/
- *
- * Reference — Android DataStore with OkHttp:
- * https://developer.android.com/topic/libraries/architecture/datastore#synchronous
  *
  * File: app/src/main/java/com/example/csievent/data/remote/interceptor/AuthInterceptor.kt
  */
@@ -41,32 +33,29 @@ class AuthInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
 
-        // ------------------------------------------------------------------
-        // Step 1: Read the stored JWT token (synchronous DataStore read)
-        // ------------------------------------------------------------------
-        val token = runBlocking {
-            tokenManager.getToken().first()
-        }
+        val request = chain.request()
+        val isAuthCall = request.url.encodedPath.startsWith("/auth/")
 
         // ------------------------------------------------------------------
-        // Step 2: Build the outgoing request with the Authorization header
+        // Step 1: Build the outgoing request with the Authorization header
         // ------------------------------------------------------------------
-        val requestBuilder = chain.request().newBuilder()
+        val requestBuilder = request.newBuilder()
 
+        val token = if (isAuthCall) null else tokenManager.currentTokenBlocking()
         if (!token.isNullOrEmpty()) {
-            requestBuilder.addHeader("Authorization", "Bearer $token")
+            requestBuilder.header("Authorization", "Bearer $token")
         }
 
         // ------------------------------------------------------------------
-        // Step 3: Execute the request
+        // Step 2: Execute the request
         // ------------------------------------------------------------------
         val response = chain.proceed(requestBuilder.build())
 
         // ------------------------------------------------------------------
-        // Step 4: If the server returns 401, clear the token and broadcast
-        //         a logout event so MainActivity can navigate to Login
+        // Step 3: If a logged-in request returns 401, the session is over:
+        //         clear the token and send the user back to Login
         // ------------------------------------------------------------------
-        if (response.code == HTTP_UNAUTHORIZED) {
+        if (response.code == HTTP_UNAUTHORIZED && !isAuthCall && !token.isNullOrEmpty()) {
             runBlocking {
                 tokenManager.clear()   // wipe the expired token from DataStore
             }

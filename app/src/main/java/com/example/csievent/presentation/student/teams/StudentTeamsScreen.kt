@@ -170,7 +170,7 @@ fun StudentTeamsScreen(
             containerColor = Color.Transparent
         ) { pad ->
             LazyColumn(
-                modifier       = Modifier.fillMaxSize().padding(pad),
+                modifier       = Modifier.fillMaxSize().padding(pad).imePadding(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {

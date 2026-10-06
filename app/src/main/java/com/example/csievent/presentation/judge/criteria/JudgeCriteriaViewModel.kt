@@ -8,13 +8,13 @@ import com.example.csievent.domain.repository.CriteriaRepository
 import com.example.csievent.domain.repository.ScoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
 
 data class JudgeCriteriaState(
     val isLoading:      Boolean                   = false,
@@ -38,7 +38,7 @@ class JudgeCriteriaViewModel @Inject constructor(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             val criteriaDeferred = async { criteriaRepository.getCriteriaByEvent(eventId) }
-            val scoresDeferred   = async { scoreRepository.getScoresByJudge() }
+            val scoresDeferred   = async { scoreRepository.getScoresByJudge(eventId) }
             val criteriaResult   = criteriaDeferred.await()
             val scoresResult     = scoresDeferred.await()
             _state.update {
@@ -53,37 +53,37 @@ class JudgeCriteriaViewModel @Inject constructor(
     }
 
     /**
-     * Submits all scores at once in parallel.
+     * Submits all scores for the team in a single request; the server saves
+     * them all or none, so a team is never left half-scored.
      * scores: Map of criteriaId -> scoreValue
      */
     fun submitAllScores(teamId: Long, scores: Map<Long, Int>, eventId: Long) {
+        if (_state.value.isSubmitting) return
+
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, error = null) }
 
-            val results = scores.map { (criteriaId, scoreValue) ->
-                async { scoreRepository.submitScore(teamId, criteriaId, scoreValue) }
-            }.awaitAll()
-
-            val firstFailure = results.firstOrNull { it.isFailure }
-            if (firstFailure != null) {
-                _state.update {
-                    it.copy(
-                        isSubmitting = false,
-                        error        = firstFailure.exceptionOrNull()?.message ?: "Failed to submit scores"
-                    )
+            scoreRepository.submitScores(teamId, scores)
+                .onSuccess {
+                    // Reload scores so indicators update
+                    scoreRepository.getScoresByJudge(eventId).onSuccess { updated ->
+                        _state.update { it.copy(existingScores = updated) }
+                    }
+                    _state.update {
+                        it.copy(
+                            isSubmitting   = false,
+                            successMessage = "All verdicts cast successfully"
+                        )
+                    }
                 }
-            } else {
-                // Reload scores so indicators update
-                scoreRepository.getScoresByJudge().onSuccess { updated ->
-                    _state.update { it.copy(existingScores = updated) }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            isSubmitting = false,
+                            error        = error.message ?: "Failed to submit scores"
+                        )
+                    }
                 }
-                _state.update {
-                    it.copy(
-                        isSubmitting   = false,
-                        successMessage = "All verdicts cast successfully"
-                    )
-                }
-            }
         }
     }
 

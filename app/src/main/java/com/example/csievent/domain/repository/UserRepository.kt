@@ -12,4 +12,8 @@ interface UserRepository {
 
 
     suspend fun updateUserRole(userId: Long, role: String): Result<String>
+
+    suspend fun getMe(): Result<UserResponseDto>
+
+    suspend fun deleteMyAccount(password: String): Result<String>
 }

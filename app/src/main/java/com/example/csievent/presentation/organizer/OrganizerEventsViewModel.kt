@@ -116,6 +116,44 @@ class OrganizerEventsViewModel @Inject constructor(
     }
 
 
+    fun unlockScoring(eventId: Long) {
+        viewModelScope.launch {
+            repository.unlockScoring(eventId)
+                .onSuccess {
+                    fetchEvents()
+                    _state.update {
+                        it.copy(successMessage = "Scoring unlocked 🔓")
+                    }
+                }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(error = error.message ?: "Failed to unlock scoring")
+                    }
+                }
+        }
+    }
+
+
+    fun deleteEvent(eventId: Long) {
+        viewModelScope.launch {
+            repository.deleteEvent(eventId)
+                .onSuccess {
+                    _state.update { s ->
+                        s.copy(
+                            events         = s.events.filterNot { it.id == eventId },
+                            successMessage = "Event deleted"
+                        )
+                    }
+                }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(error = error.message ?: "Failed to delete event")
+                    }
+                }
+        }
+    }
+
+
     suspend fun logout() {
         tokenManager.clear()
     }

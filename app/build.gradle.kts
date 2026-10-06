@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -5,25 +7,58 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+// Release signing: create keystore.properties in the project root (it is
+// gitignored), see README.md. Without it, release builds are left unsigned.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
 android {
     namespace = "com.example.csievent"
-    compileSdk = 34
+    compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.csievent"
+        // Play Store ID — permanent once published (namespace above is code-only)
+        applicationId = "com.csi.events"
         minSdk = 27
-        targetSdk = 34
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
+
+        buildConfigField("String", "BASE_URL", "\"https://csieventmangement.onrender.com/\"")
+    }
+
+    signingConfigs {
+        if (keystoreProperties.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            // Plain http is allowed only in debug builds, for a backend on your PC
+            manifestPlaceholders["usesCleartextTraffic"] = "true"
+            // Point a debug build at a local backend with:
+            //   ./gradlew installDebug -PapiUrl=http://10.0.2.2:8080/
+            (project.findProperty("apiUrl") as String?)?.let {
+                buildConfigField("String", "BASE_URL", "\"$it\"")
+            }
+        }
         release {
-            isMinifyEnabled = false
+            manifestPlaceholders["usesCleartextTraffic"] = "false"
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
@@ -63,9 +98,9 @@ dependencies {
     // Navigation
     implementation("androidx.navigation:navigation-compose:2.7.7")
 
-    // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // Retrofit (2.11 ships R8 rules for suspend functions)
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
 
     // OkHttp Logging
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
@@ -81,9 +116,7 @@ dependencies {
     // DataStore
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Lottie
-    implementation("com.airbnb.android:lottie-compose:6.4.0")
-
     implementation("androidx.compose.material:material-icons-extended")
 
+    testImplementation("junit:junit:4.13.2")
 }

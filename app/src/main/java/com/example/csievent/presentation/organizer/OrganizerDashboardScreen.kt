@@ -48,6 +48,9 @@ fun OrganizerDashboardScreen(
     val scope = rememberCoroutineScope()
     LaunchedEffect(Unit) { viewModel.fetchEvents() }
 
+    // Lock / unlock / delete all ask for confirmation first
+    var pendingAction by remember { mutableStateOf<Pair<EventAction, EventResponseDto>?>(null) }
+
     val inf = rememberInfiniteTransition(label = "war_room")
 
     // Nebula + atmosphere
@@ -182,7 +185,10 @@ fun OrganizerDashboardScreen(
                     title = {},
                     actions = {
                         IconButton(onClick = { navController.navigate(Routes.ROLE_MANAGEMENT) }) {
-                            Icon(Icons.Default.Person, null, tint = Color(0xFF8C83E4))
+                            Icon(Icons.Default.Groups, "Manage roles", tint = Color(0xFF8C83E4))
+                        }
+                        IconButton(onClick = { navController.navigate(Routes.PROFILE) }) {
+                            Icon(Icons.Default.AccountCircle, "Profile", tint = Color(0xFF8C83E4))
                         }
                         IconButton(onClick = { viewModel.fetchEvents() }) {
                             Icon(Icons.Default.Refresh, null, tint = Color(0xFF8C83E4))
@@ -473,10 +479,12 @@ fun OrganizerDashboardScreen(
                 // ── HOLOGRAPHIC MISSION CARDS ─────────────────────────
                 itemsIndexed(state.events, key = { _, e -> e.id }) { index, event ->
                     HolographicMissionCard(
-                        event         = event,
-                        index         = index,
-                        navController = navController,
-                        onLockScoring = { viewModel.lockScoring(event.id) }
+                        event           = event,
+                        index           = index,
+                        navController   = navController,
+                        onLockScoring   = { pendingAction = EventAction.LOCK to event },
+                        onUnlockScoring = { pendingAction = EventAction.UNLOCK to event },
+                        onDelete        = { pendingAction = EventAction.DELETE to event }
                     )
                 }
 
@@ -484,7 +492,60 @@ fun OrganizerDashboardScreen(
             }
         }
     }
+
+    pendingAction?.let { (action, event) ->
+        AlertDialog(
+            onDismissRequest = { pendingAction = null },
+            containerColor   = Color(0xFF0D0B1F),
+            title = {
+                Text(
+                    when (action) {
+                        EventAction.LOCK   -> "Lock scoring?"
+                        EventAction.UNLOCK -> "Unlock scoring?"
+                        EventAction.DELETE -> "Delete event?"
+                    },
+                    color = Color(0xFFECEBF7)
+                )
+            },
+            text = {
+                Text(
+                    when (action) {
+                        EventAction.LOCK   -> "Judges won't be able to change scores for \"${event.title}\", and the final results become visible to everyone."
+                        EventAction.UNLOCK -> "Judges will be able to change scores for \"${event.title}\" again, and results are hidden until you lock it."
+                        EventAction.DELETE -> "\"${event.title}\" and all its teams, criteria, judges and scores will be permanently deleted. This can't be undone."
+                    },
+                    color = Color(0xFF9C99B8)
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    when (action) {
+                        EventAction.LOCK   -> viewModel.lockScoring(event.id)
+                        EventAction.UNLOCK -> viewModel.unlockScoring(event.id)
+                        EventAction.DELETE -> viewModel.deleteEvent(event.id)
+                    }
+                    pendingAction = null
+                }) {
+                    Text(
+                        when (action) {
+                            EventAction.LOCK   -> "Lock"
+                            EventAction.UNLOCK -> "Unlock"
+                            EventAction.DELETE -> "Delete"
+                        },
+                        color = if (action == EventAction.UNLOCK) Color(0xFF10B981) else Color(0xFFEF4444)
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingAction = null }) {
+                    Text("Cancel", color = Color(0xFF8C83E4))
+                }
+            }
+        )
+    }
 }
+
+private enum class EventAction { LOCK, UNLOCK, DELETE }
 
 // =============================================================================
 // HOLOGRAPHIC MISSION CARD
@@ -492,10 +553,12 @@ fun OrganizerDashboardScreen(
 
 @Composable
 private fun HolographicMissionCard(
-    event:         EventResponseDto,
-    index:         Int,
-    navController: NavHostController,
-    onLockScoring: () -> Unit
+    event:           EventResponseDto,
+    index:           Int,
+    navController:   NavHostController,
+    onLockScoring:   () -> Unit,
+    onUnlockScoring: () -> Unit,
+    onDelete:        () -> Unit
 ) {
     val isLocked = event.scoringLocked
     val inf      = rememberInfiniteTransition(label = "holo_$index")
@@ -874,22 +937,20 @@ private fun HolographicMissionCard(
                                         onClick  = onLockScoring
                                     )
                                 } else {
-                                    Box(
-                                        modifier = Modifier.weight(1f)
-                                            .clip(RoundedCornerShape(10.dp))
-                                            .background(Color(0xFF1A0808))
-                                            .border(1.dp, Color(0xFFEF4444).copy(alpha = 0.2f),
-                                                RoundedCornerShape(10.dp))
-                                            .padding(vertical = 12.dp),
-                                        contentAlignment = Alignment.Center
-                                    ) {
-                                        Text("🔒 LOCKED",
-                                            color = Color(0xFFEF4444).copy(alpha = 0.4f),
-                                            fontSize = 11.sp, fontFamily = FontFamily.Monospace,
-                                            fontWeight = FontWeight.Bold)
-                                    }
+                                    HoloActionButton(
+                                        icon = "🔓", label = "UNLOCK",
+                                        accent = Color(0xFF10B981),
+                                        modifier = Modifier.weight(1f),
+                                        onClick  = onUnlockScoring
+                                    )
                                 }
                             }
+                            HoloActionButton(
+                                icon = "🗑", label = "DELETE EVENT",
+                                accent = Color(0xFFEF4444),
+                                modifier = Modifier.fillMaxWidth(),
+                                onClick  = onDelete
+                            )
                         }
                     }
                 }
@@ -925,6 +986,7 @@ private fun HoloActionButton(
     onClick:  () -> Unit
 ) {
     var pressed by remember { mutableStateOf(false) }
+    val currentOnClick by rememberUpdatedState(onClick)
     val s by animateFloatAsState(
         targetValue   = if (pressed) 0.95f else 1f,
         animationSpec = spring(stiffness = Spring.StiffnessHigh), label = "hab_s"
@@ -938,7 +1000,7 @@ private fun HoloActionButton(
             .pointerInput(Unit) {
                 detectTapGestures(
                     onPress = { pressed = true; tryAwaitRelease(); pressed = false },
-                    onTap   = { onClick() }
+                    onTap   = { currentOnClick() }
                 )
             }
             .padding(vertical = 12.dp),
