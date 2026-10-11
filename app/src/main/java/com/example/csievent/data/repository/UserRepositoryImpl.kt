@@ -3,7 +3,10 @@ package com.example.csievent.data.repository
 import com.example.csievent.data.remote.api.UpdateUserRoleRequest
 import com.example.csievent.data.remote.api.UserApi
 import com.example.csievent.data.remote.apiCall
+import com.example.csievent.data.remote.dto.AuthResponseDto
+import com.example.csievent.data.remote.dto.user.ChangePasswordRequestDto
 import com.example.csievent.data.remote.dto.user.DeleteAccountRequestDto
+import com.example.csievent.data.remote.dto.user.UpdateProfileRequestDto
 import com.example.csievent.data.remote.dto.user.UserResponseDto
 import com.example.csievent.domain.repository.UserRepository
 import javax.inject.Inject
@@ -27,6 +30,17 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getMe(): Result<UserResponseDto> = apiCall {
         api.getMe()
+    }
+
+    override suspend fun updateMyName(name: String): Result<UserResponseDto> = apiCall {
+        api.updateMe(UpdateProfileRequestDto(name.trim()))
+    }
+
+    override suspend fun changePassword(
+        currentPassword: String,
+        newPassword: String
+    ): Result<AuthResponseDto> = apiCall {
+        api.changePassword(ChangePasswordRequestDto(currentPassword, newPassword))
     }
 
     override suspend fun deleteMyAccount(password: String): Result<String> = apiCall {

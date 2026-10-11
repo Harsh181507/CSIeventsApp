@@ -113,6 +113,7 @@ fun RegisterScreen(
             onValueChange = { email = it },
             label = "College email",
             placeholder = "you@vitapstudent.ac.in",
+            supportingText = "Use your @vitapstudent.ac.in email",
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next
         )

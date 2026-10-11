@@ -38,6 +38,12 @@ interface TeamRepository {
     /** Joins a team by its database ID. */
     suspend fun joinTeam(teamId: Long): Result<String>
 
+    /** Renames a team (leader only). */
+    suspend fun renameTeam(teamId: Long, teamName: String): Result<TeamResponseDto>
+
+    /** Removes a member by their team-membership ID (leader only). */
+    suspend fun removeMember(teamMemberId: Long): Result<String>
+
     /** Leaves a team. Only non-leaders can leave. */
     suspend fun leaveTeam(teamId: Long): Result<String>
 }

@@ -1,6 +1,9 @@
 package com.example.csievent.data.remote.api
 
+import com.example.csievent.data.remote.dto.AuthResponseDto
+import com.example.csievent.data.remote.dto.user.ChangePasswordRequestDto
 import com.example.csievent.data.remote.dto.user.DeleteAccountRequestDto
+import com.example.csievent.data.remote.dto.user.UpdateProfileRequestDto
 import com.example.csievent.data.remote.dto.user.UserResponseDto
 import okhttp3.ResponseBody
 import retrofit2.http.Body
@@ -26,6 +29,17 @@ interface UserApi {
     // Profile of the logged-in user (fresh role after an organizer changes it)
     @GET("users/me")
     suspend fun getMe(): UserResponseDto
+
+    @PUT("users/me")
+    suspend fun updateMe(
+        @Body request: UpdateProfileRequestDto
+    ): UserResponseDto
+
+    // Signs out other devices; returns a new token for this one
+    @POST("users/me/password")
+    suspend fun changePassword(
+        @Body request: ChangePasswordRequestDto
+    ): AuthResponseDto
 
     // Permanently deletes the logged-in user's account
     @POST("users/me/delete")

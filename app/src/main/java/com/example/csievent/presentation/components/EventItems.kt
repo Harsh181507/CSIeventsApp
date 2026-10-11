@@ -6,15 +6,21 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.Share
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -58,6 +64,37 @@ fun EventRow(
             if (chipText != null) StatusChip(chipText, chipKind)
         }
     }
+}
+
+/** Date, start time and venue of an event, one per line with an icon. */
+@Composable
+fun EventFacts(date: String?, time: String?, venue: String?, modifier: Modifier = Modifier) {
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        val relative = formatRelativeDate(date)
+        FactRow(
+            Icons.Rounded.CalendarMonth,
+            if (relative == "Today" || relative == "Tomorrow") "$relative · ${formatLongDate(date)}" else formatLongDate(date)
+        )
+        formatTime(time)?.let { FactRow(Icons.Rounded.Schedule, it) }
+        venue?.trim()?.takeIf { it.isNotEmpty() }?.let { FactRow(Icons.Rounded.Place, it) }
+    }
+}
+
+@Composable
+private fun FactRow(icon: ImageVector, text: String) {
+    val c = CsiTheme.colors
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(icon, contentDescription = null, tint = c.highlight, modifier = Modifier.size(18.dp))
+        Text(text, style = MaterialTheme.typography.bodyMedium, color = c.text)
+    }
+}
+
+/** Status chip an organizer sees for an event. */
+fun organizerChip(phase: EventPhase): Pair<String, ChipKind> = when (phase) {
+    EventPhase.UPCOMING -> "Upcoming" to ChipKind.OUTLINE
+    EventPhase.TODAY -> "Today" to ChipKind.SUCCESS
+    EventPhase.ENDED -> "Ended" to ChipKind.HIGHLIGHT // results still to publish
+    EventPhase.RESULTS -> "Results out" to ChipKind.NEUTRAL
 }
 
 /** Team join code with copy and share buttons. */

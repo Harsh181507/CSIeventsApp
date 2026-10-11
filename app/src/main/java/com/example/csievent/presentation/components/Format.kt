@@ -1,6 +1,7 @@
 package com.example.csievent.presentation.components
 
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -27,6 +28,49 @@ private fun parseDate(date: String?): LocalDate? =
 /** "2026-11-12" -> "12 Nov 2026". */
 fun formatDate(date: String?): String =
     parseDate(date)?.format(DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault())) ?: "Date TBA"
+
+/** "2026-11-12" -> "Thu, 12 Nov 2026". */
+fun formatLongDate(date: String?): String =
+    parseDate(date)?.format(DateTimeFormatter.ofPattern("EEE, d MMM yyyy", Locale.getDefault())) ?: "Date TBA"
+
+/** "Today", "Tomorrow", "Yesterday", else "12 Nov 2026". */
+fun formatRelativeDate(date: String?, today: LocalDate = LocalDate.now()): String =
+    when (parseDate(date)) {
+        null -> "Date TBA"
+        today -> "Today"
+        today.plusDays(1) -> "Tomorrow"
+        today.minusDays(1) -> "Yesterday"
+        else -> formatDate(date)
+    }
+
+private fun parseTime(time: String?): LocalTime? =
+    try {
+        time?.let { LocalTime.parse(it) }
+    } catch (e: Exception) {
+        null
+    }
+
+/** "14:30:00" -> "2:30 PM"; null when the event has no time. */
+fun formatTime(time: String?): String? =
+    parseTime(time)?.format(DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH))
+
+/** One line for lists: "Today · 2:30 PM · AB-1 Seminar Hall". */
+fun formatSchedule(date: String?, time: String?, venue: String?, today: LocalDate = LocalDate.now()): String =
+    listOfNotNull(formatRelativeDate(date, today), formatTime(time), venue?.trim()?.takeIf { it.isNotEmpty() })
+        .joinToString(" · ")
+
+/** Where an event is in its life, from its date and whether results are out. */
+enum class EventPhase { UPCOMING, TODAY, ENDED, RESULTS }
+
+fun eventPhase(date: String?, scoringLocked: Boolean, today: LocalDate = LocalDate.now()): EventPhase {
+    if (scoringLocked) return EventPhase.RESULTS
+    val day = parseDate(date) ?: return EventPhase.UPCOMING
+    return when {
+        day == today -> EventPhase.TODAY
+        day.isBefore(today) -> EventPhase.ENDED
+        else -> EventPhase.UPCOMING
+    }
+}
 
 /** "2026-11-12" -> "12 NOV". */
 fun formatDayMonth(date: String?): String =

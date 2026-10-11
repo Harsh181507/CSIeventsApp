@@ -16,7 +16,7 @@ import com.example.csievent.presentation.auth.RegisterScreen
 import com.example.csievent.presentation.judge.JudgeHomeScreen
 import com.example.csievent.presentation.judge.scoring.JudgeScoringScreen
 import com.example.csievent.presentation.judge.teams.JudgeTeamsScreen
-import com.example.csievent.presentation.organizer.CreateEventScreen
+import com.example.csievent.presentation.organizer.EventFormScreen
 import com.example.csievent.presentation.organizer.OrganizerHomeScreen
 import com.example.csievent.presentation.organizer.assign.AssignJudgeScreen
 import com.example.csievent.presentation.organizer.criteria.CriteriaScreen
@@ -78,7 +78,10 @@ fun AppNavGraph(navController: NavHostController) {
 
         // ── Organizer ───────────────────────────────────────────────────
         composable(Routes.ORGANIZER_HOME) { OrganizerHomeScreen(navController = navController) }
-        composable(Routes.CREATE_EVENT) { CreateEventScreen(navController = navController) }
+        composable(Routes.CREATE_EVENT) { EventFormScreen(navController = navController) }
+        eventRoute(Routes.EDIT_EVENT) { eventId, _ ->
+            EventFormScreen(navController = navController, eventId = eventId)
+        }
         composable(Routes.ROLE_MANAGEMENT) { RoleManagementScreen(navController = navController) }
         eventRoute(Routes.ORGANIZER_EVENT) { eventId, _ ->
             OrganizerEventScreen(eventId = eventId, navController = navController)

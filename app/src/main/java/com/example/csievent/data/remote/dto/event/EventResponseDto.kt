@@ -5,6 +5,8 @@ data class EventResponseDto(
     val title: String,
     val description: String?,
     val eventDate: String?, // LocalDate comes as String in JSON
+    val eventTime: String? = null, // "10:30:00"; null for events made before times existed
+    val venue: String? = null,
     val createdBy: Long?,   // null for events whose creator deleted their account
     val maxTeamSize: Int,
     val scoringLocked: Boolean

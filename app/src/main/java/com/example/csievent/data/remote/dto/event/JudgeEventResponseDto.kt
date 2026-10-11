@@ -5,5 +5,7 @@ data class JudgeEventResponseDto(
     val title: String,
     val description: String?,
     val eventDate: String? = null,
+    val eventTime: String? = null,
+    val venue: String? = null,
     val scoringLocked: Boolean
 )

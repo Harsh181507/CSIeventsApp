@@ -69,6 +69,7 @@ private fun defaultMessageFor(code: Int): String = when (code) {
     403 -> "You don't have permission to do that."
     404 -> "Not found."
     409 -> "This conflicts with existing data. Refresh and try again."
+    429 -> "Too many attempts. Please wait a few minutes and try again."
     502, 503, 504 -> "The server is starting up or busy. Please try again in a minute."
     else -> "Something went wrong on the server (error $code). Please try again."
 }

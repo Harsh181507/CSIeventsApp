@@ -6,13 +6,19 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.PersonRemove
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.csievent.data.remote.dto.event.EventResponseDto
+import com.example.csievent.data.remote.dto.team.TeamMemberDto
 import com.example.csievent.data.remote.dto.team.TeamResponseDto
 import com.example.csievent.presentation.components.Avatar
 import com.example.csievent.presentation.components.BottomSpacer
@@ -48,6 +55,8 @@ import com.example.csievent.presentation.components.CsiTextField
 import com.example.csievent.presentation.components.CsiTopBar
 import com.example.csievent.presentation.components.EmptyState
 import com.example.csievent.presentation.components.ErrorState
+import com.example.csievent.presentation.components.EventFacts
+import com.example.csievent.presentation.components.FormDialog
 import com.example.csievent.presentation.components.GhostButton
 import com.example.csievent.presentation.components.JoinCodeBox
 import com.example.csievent.presentation.components.LoadingState
@@ -59,8 +68,8 @@ import com.example.csievent.presentation.components.SecondaryButton
 import com.example.csievent.presentation.components.SectionHeader
 import com.example.csievent.presentation.components.StatusChip
 import com.example.csievent.presentation.components.formatDate
-import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.components.shareText
+import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.ui.theme.CsiTheme
 import com.example.csievent.ui.theme.monoStyle
@@ -81,6 +90,8 @@ fun StudentEventScreen(
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
     var confirmLeave by remember { mutableStateOf(false) }
+    var renaming by remember { mutableStateOf(false) }
+    var removing by remember { mutableStateOf<TeamMemberDto?>(null) }
 
     LaunchedEffect(eventId) { viewModel.loadTeams(eventId) }
     MessageEffect(state.message, snackbar, viewModel::clearMessage)
@@ -148,7 +159,12 @@ fun StudentEventScreen(
                                         "Join my team \"${myTeam.teamName}\" for ${event?.title ?: "the event"} on CSI Events. Code: $code"
                                     )
                                 },
-                                onLeave = { confirmLeave = true }
+                                onLeave = { confirmLeave = true },
+                                onRename = {
+                                    viewModel.clearDialogError()
+                                    renaming = true
+                                },
+                                onRemove = { member -> removing = member }
                             )
                         }
                         !locked -> item(key = "getin") {
@@ -205,6 +221,39 @@ fun StudentEventScreen(
             onDismiss = { confirmLeave = false }
         )
     }
+
+    if (renaming && myTeam != null) {
+        var name by remember { mutableStateOf(myTeam.teamName) }
+        FormDialog(
+            title = "Rename team",
+            confirmLabel = "Save",
+            working = state.isWorking,
+            error = state.dialogError,
+            confirmEnabled = name.isNotBlank() && name.trim() != myTeam.teamName,
+            onConfirm = { viewModel.renameTeam(myTeam.id, name, eventId) { renaming = false } },
+            onDismiss = { renaming = false }
+        ) {
+            CsiTextField(
+                value = name,
+                onValueChange = { name = it.take(100) },
+                label = "Team name",
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Done,
+                onImeAction = { if (name.isNotBlank()) viewModel.renameTeam(myTeam.id, name, eventId) { renaming = false } }
+            )
+        }
+    }
+
+    removing?.let { member ->
+        ConfirmDialog(
+            title = "Remove ${member.name}?",
+            message = "They'll leave ${myTeam?.teamName ?: "the team"} and can join another team with its code.",
+            confirmLabel = "Remove",
+            destructive = true,
+            onConfirm = { viewModel.removeMember(member.id, member.name, eventId) },
+            onDismiss = { removing = null }
+        )
+    }
 }
 
 @Composable
@@ -215,6 +264,7 @@ private fun EventInfo(event: EventResponseDto, teamCount: Int) {
             StatusChip("Teams of up to ${event.maxTeamSize}", ChipKind.NEUTRAL)
             StatusChip("$teamCount teams", ChipKind.NEUTRAL)
         }
+        EventFacts(event.eventDate, event.eventTime, event.venue)
         if (!event.description.isNullOrBlank()) {
             Text(event.description, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
         }
@@ -230,25 +280,43 @@ private fun MyTeamCard(
     working: Boolean,
     onCopy: (String) -> Unit,
     onShare: (String) -> Unit,
-    onLeave: () -> Unit
+    onLeave: () -> Unit,
+    onRename: () -> Unit,
+    onRemove: (TeamMemberDto) -> Unit
 ) {
     val c = CsiTheme.colors
     val iAmLeader = myUserId != null && team.leaderId == myUserId
+    val canManage = iAmLeader && !locked
+    val details = team.memberDetails.orEmpty()
 
     CsiCard(highlighted = true) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("YOUR TEAM", style = MaterialTheme.typography.labelSmall, color = c.textMuted, modifier = Modifier.weight(1f))
             StatusChip("${team.members.size} / $maxSize members", ChipKind.SUCCESS)
         }
-        Text(team.teamName, style = MaterialTheme.typography.headlineSmall, color = c.text)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(team.teamName, style = MaterialTheme.typography.headlineSmall, color = c.text, modifier = Modifier.weight(1f))
+            if (canManage) {
+                IconButton(onClick = onRename, enabled = !working) {
+                    Icon(Icons.Rounded.Edit, contentDescription = "Rename team", tint = c.textMuted)
+                }
+            }
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            team.members.forEach { member ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Avatar(member, size = 32, emphasized = member == team.leaderName)
-                    Text(member, style = MaterialTheme.typography.bodyLarge, color = c.text, modifier = Modifier.weight(1f))
-                    if (member == team.leaderName) StatusChip("Leader", ChipKind.HIGHLIGHT)
+            if (details.isNotEmpty()) {
+                details.forEach { member ->
+                    val isLeader = member.userId == team.leaderId
+                    MemberRow(
+                        name = member.name,
+                        isLeader = isLeader,
+                        onRemove = if (canManage && !isLeader) ({ onRemove(member) }) else null,
+                        enabled = !working
+                    )
                 }
+            } else {
+                // Older backend without member ids
+                team.members.forEach { name -> MemberRow(name, isLeader = name == team.leaderName, onRemove = null) }
             }
         }
 
@@ -259,12 +327,37 @@ private fun MyTeamCard(
         if (!locked) {
             if (iAmLeader) {
                 Text(
-                    "Share the code to add teammates. As the leader you stay in the team.",
+                    "Share the code to add teammates. As the leader you can rename the team or remove members.",
                     style = MaterialTheme.typography.bodySmall,
                     color = c.textSubtle
                 )
             } else {
                 GhostButton(text = "Leave team", color = c.danger, onClick = onLeave, enabled = !working)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MemberRow(name: String, isLeader: Boolean, onRemove: (() -> Unit)?, enabled: Boolean = true) {
+    val c = CsiTheme.colors
+    // Same height with or without the remove button, so rows are evenly spaced
+    Row(
+        modifier = Modifier.heightIn(min = 48.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Avatar(name, size = 32, emphasized = isLeader)
+        Text(name, style = MaterialTheme.typography.bodyLarge, color = c.text, modifier = Modifier.weight(1f))
+        if (isLeader) StatusChip("Leader", ChipKind.HIGHLIGHT)
+        if (onRemove != null) {
+            IconButton(onClick = onRemove, enabled = enabled) {
+                Icon(
+                    Icons.Rounded.PersonRemove,
+                    contentDescription = "Remove $name",
+                    tint = c.textMuted,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

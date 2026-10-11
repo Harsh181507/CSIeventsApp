@@ -1,5 +1,7 @@
 package com.example.csievent.presentation.results
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -18,15 +20,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EmojiEvents
+import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.HourglassTop
 import androidx.compose.material.icons.rounded.Insights
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +48,7 @@ import com.example.csievent.presentation.components.CsiScreen
 import com.example.csievent.presentation.components.CsiTopBar
 import com.example.csievent.presentation.components.EmptyState
 import com.example.csievent.presentation.components.LoadingState
+import com.example.csievent.presentation.components.MessageEffect
 import com.example.csievent.presentation.components.NoticeBanner
 import com.example.csievent.presentation.components.ProgressBar
 import com.example.csievent.presentation.components.RefreshableBox
@@ -64,7 +71,13 @@ fun ResultsScreen(
     val c = CsiTheme.colors
     val state by viewModel.state.collectAsState()
 
+    val snackbar = remember { SnackbarHostState() }
+    val exportLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("text/csv")) { uri ->
+        uri?.let { viewModel.exportResults(eventId, it) }
+    }
+
     LaunchedEffect(eventId) { viewModel.load(eventId) }
+    MessageEffect(state.message, snackbar, viewModel::clearMessage)
 
     val final = state.event?.scoringLocked == true
     val entries = state.entries
@@ -74,6 +87,7 @@ fun ResultsScreen(
     val judges = entries.maxOfOrNull { it.judgeCount } ?: 0
 
     CsiScreen(
+        snackbarHostState = snackbar,
         topBar = {
             CsiTopBar(
                 title = if (final || !state.canSeeLive) "Results" else "Live standings",
@@ -84,7 +98,17 @@ fun ResultsScreen(
                         if (judges > 0) append(" · $judges judge" + if (judges == 1L) "" else "s")
                     }
                 },
-                onBack = onBack
+                onBack = onBack,
+                actions = {
+                    if (state.isOrganizer && state.event != null) {
+                        IconButton(
+                            onClick = { exportLauncher.launch(csvFileName(state.event!!.title)) },
+                            enabled = !state.isExporting
+                        ) {
+                            Icon(Icons.Rounded.FileDownload, contentDescription = "Export results as a spreadsheet (CSV)", tint = c.text)
+                        }
+                    }
+                }
             )
         }
     ) { padding ->
@@ -152,6 +176,10 @@ fun ResultsScreen(
         }
     }
 }
+
+/** "HackVerse 2026" -> "hackverse-2026-results.csv". */
+private fun csvFileName(title: String): String =
+    title.lowercase().replace(Regex("[^a-z0-9]+"), "-").trim('-').ifEmpty { "event" } + "-results.csv"
 
 /** 2nd · 1st · 3rd columns of different heights. */
 @Composable

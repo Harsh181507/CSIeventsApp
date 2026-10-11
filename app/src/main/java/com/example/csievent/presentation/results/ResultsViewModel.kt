@@ -1,5 +1,7 @@
 package com.example.csievent.presentation.results
 
+import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.csievent.data.local.TokenManager
@@ -9,6 +11,8 @@ import com.example.csievent.domain.repository.EventRepository
 import com.example.csievent.domain.repository.ScoreRepository
 import com.example.csievent.domain.repository.TeamRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ResultsState(
@@ -26,6 +31,10 @@ data class ResultsState(
     val myTeamId: Long? = null,
     /** Organizers and judges see live standings before scoring is locked. */
     val canSeeLive: Boolean = false,
+    /** Organizers can export the full results as a spreadsheet. */
+    val isOrganizer: Boolean = false,
+    val isExporting: Boolean = false,
+    val message: String? = null,
     val error: String? = null
 )
 
@@ -34,7 +43,8 @@ class ResultsViewModel @Inject constructor(
     private val scoreRepository: ScoreRepository,
     private val eventRepository: EventRepository,
     private val teamRepository: TeamRepository,
-    private val tokenManager: TokenManager
+    private val tokenManager: TokenManager,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(ResultsState())
@@ -61,9 +71,32 @@ class ResultsViewModel @Inject constructor(
                     entries = board.getOrDefault(emptyList()),
                     myTeamId = myTeamD.await()?.id,
                     canSeeLive = live,
+                    isOrganizer = role == "ORGANIZER",
                     error = board.exceptionOrNull()?.message
                 )
             }
         }
     }
+
+    /** Downloads the results CSV and writes it to [uri] (picked by the user). */
+    fun exportResults(eventId: Long, uri: Uri) {
+        if (_state.value.isExporting) return
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true) }
+
+            eventRepository.exportResults(eventId)
+                .mapCatching { bytes ->
+                    withContext(Dispatchers.IO) {
+                        context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                            ?: error("Couldn't open the file to save it")
+                    }
+                }
+                .onSuccess { _state.update { it.copy(isExporting = false, message = "Results saved") } }
+                .onFailure { error ->
+                    _state.update { it.copy(isExporting = false, message = error.message ?: "Couldn't save the results") }
+                }
+        }
+    }
+
+    fun clearMessage() = _state.update { it.copy(message = null) }
 }

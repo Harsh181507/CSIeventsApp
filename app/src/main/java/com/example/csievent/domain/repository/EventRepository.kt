@@ -8,6 +8,9 @@ interface EventRepository {
     suspend fun getAllEvents(): Result<List<EventResponseDto>>
     suspend fun getEvent(eventId: Long): Result<EventResponseDto>
     suspend fun createEvent(request: CreateEventRequestDto): Result<EventResponseDto>
+    suspend fun updateEvent(eventId: Long, request: CreateEventRequestDto): Result<EventResponseDto>
+    /** Full results as CSV bytes (organizer). */
+    suspend fun exportResults(eventId: Long): Result<ByteArray>
     suspend fun lockScoring(eventId: Long): Result<String>
     suspend fun unlockScoring(eventId: Long): Result<String>
     suspend fun deleteEvent(eventId: Long): Result<String>

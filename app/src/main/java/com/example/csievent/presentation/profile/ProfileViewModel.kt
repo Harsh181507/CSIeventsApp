@@ -20,7 +20,11 @@ data class ProfileState(
     val email:      String  = "",
     val role:       String  = "",
     val isDeleting: Boolean = false,
+    /** Saving a new name or password. */
+    val isSaving:   Boolean = false,
+    /** Error shown inside whichever dialog is open. */
     val error:      String? = null,
+    val message:    String? = null,
     /** True once the user logged out or deleted their account. */
     val signedOut:  Boolean = false
 )
@@ -63,6 +67,62 @@ class ProfileViewModel @Inject constructor(
             _state.update { it.copy(signedOut = true) }
         }
     }
+
+    fun updateName(name: String, onDone: () -> Unit) {
+        if (_state.value.isSaving) return
+        if (name.isBlank()) {
+            _state.update { it.copy(error = "Enter your name") }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, error = null) }
+
+            userRepository.updateMyName(name)
+                .onSuccess { me ->
+                    tokenManager.saveProfile(me.name, me.email)
+                    _state.update { it.copy(isSaving = false, name = me.name, message = "Name updated") }
+                    onDone()
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isSaving = false, error = error.message ?: "Couldn't update your name") }
+                }
+        }
+    }
+
+    /** Signs out other devices; this device gets a new token. */
+    fun changePassword(current: String, new: String, confirm: String, onDone: () -> Unit) {
+        if (_state.value.isSaving) return
+
+        val problem = when {
+            current.isBlank() -> "Enter your current password"
+            new.length < 6 -> "New password must be at least 6 characters"
+            new != confirm -> "The new passwords don't match"
+            else -> null
+        }
+        if (problem != null) {
+            _state.update { it.copy(error = problem) }
+            return
+        }
+
+        viewModelScope.launch {
+            _state.update { it.copy(isSaving = true, error = null) }
+
+            userRepository.changePassword(current, new)
+                .onSuccess { auth ->
+                    tokenManager.saveToken(auth.token, auth.role)
+                    _state.update {
+                        it.copy(isSaving = false, message = "Password changed. Other devices have been signed out.")
+                    }
+                    onDone()
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isSaving = false, error = error.message ?: "Couldn't change your password") }
+                }
+        }
+    }
+
+    fun clearMessage() = _state.update { it.copy(message = null) }
 
     fun deleteAccount(password: String) {
         if (_state.value.isDeleting) return

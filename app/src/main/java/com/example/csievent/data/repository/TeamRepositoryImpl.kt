@@ -55,6 +55,19 @@ class TeamRepositoryImpl @Inject constructor(
         teamApi.joinTeam(teamId).string()
     }
 
+    override suspend fun renameTeam(
+        teamId: Long,
+        teamName: String
+    ): Result<TeamResponseDto> = apiCall {
+        teamApi.renameTeam(teamId, teamName.trim())
+    }
+
+    override suspend fun removeMember(
+        teamMemberId: Long
+    ): Result<String> = apiCall {
+        teamApi.removeMember(teamMemberId).string()
+    }
+
     override suspend fun leaveTeam(
         teamId: Long
     ): Result<String> = apiCall {

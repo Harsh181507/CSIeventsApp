@@ -5,6 +5,7 @@ import okhttp3.ResponseBody
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -49,6 +50,19 @@ interface TeamApi {
     @POST("teams/join/{teamId}")
     suspend fun joinTeam(
         @Path("teamId") teamId: Long
+    ): ResponseBody
+
+    // Leader renames the team
+    @PUT("teams/{teamId}/name")
+    suspend fun renameTeam(
+        @Path("teamId") teamId: Long,
+        @Query("teamName") teamName: String
+    ): TeamResponseDto
+
+    // Leader removes a member (id from memberDetails)
+    @DELETE("team-members/{teamMemberId}")
+    suspend fun removeMember(
+        @Path("teamMemberId") teamMemberId: Long
     ): ResponseBody
 
     @DELETE("teams/{teamId}/leave")

@@ -24,6 +24,7 @@ object Routes {
     // Organizer
     const val ORGANIZER_HOME  = "organizer_home"
     const val CREATE_EVENT    = "create_event"
+    const val EDIT_EVENT      = "edit_event"       // /{eventId}
     const val ORGANIZER_EVENT = "organizer_event"  // /{eventId}
     const val CRITERIA        = "criteria"         // /{eventId}
     const val ASSIGN_JUDGE    = "assign_judge"     // /{eventId}

@@ -8,6 +8,7 @@ import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface EventApi {
@@ -24,6 +25,18 @@ interface EventApi {
     suspend fun createEvent(
         @Body request: CreateEventRequestDto
     ): EventResponseDto
+
+    @PUT("events/{eventId}")
+    suspend fun updateEvent(
+        @Path("eventId") eventId: Long,
+        @Body request: CreateEventRequestDto
+    ): EventResponseDto
+
+    // Full results spreadsheet (organizer)
+    @GET("events/{eventId}/results.csv")
+    suspend fun exportResults(
+        @Path("eventId") eventId: Long
+    ): ResponseBody
 
     @POST("events/{eventId}/lock")
     suspend fun lockScoring(

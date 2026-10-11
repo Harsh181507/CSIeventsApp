@@ -26,6 +26,17 @@ class EventRepositoryImpl @Inject constructor(
         eventApi.createEvent(request)
     }
 
+    override suspend fun updateEvent(
+        eventId: Long,
+        request: CreateEventRequestDto
+    ): Result<EventResponseDto> = apiCall {
+        eventApi.updateEvent(eventId, request)
+    }
+
+    override suspend fun exportResults(eventId: Long): Result<ByteArray> = apiCall {
+        eventApi.exportResults(eventId).bytes()
+    }
+
     override suspend fun lockScoring(eventId: Long): Result<String> = apiCall {
         eventApi.lockScoring(eventId).string()   // ← convert ResponseBody to String
     }

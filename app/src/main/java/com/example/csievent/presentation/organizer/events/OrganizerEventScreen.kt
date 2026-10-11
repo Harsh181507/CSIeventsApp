@@ -14,15 +14,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.Rule
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.Gavel
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.automirrored.rounded.Rule
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -40,9 +41,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -56,6 +57,7 @@ import com.example.csievent.presentation.components.CsiCard
 import com.example.csievent.presentation.components.CsiScreen
 import com.example.csievent.presentation.components.CsiTopBar
 import com.example.csievent.presentation.components.ErrorState
+import com.example.csievent.presentation.components.EventFacts
 import com.example.csievent.presentation.components.LoadingState
 import com.example.csievent.presentation.components.MessageEffect
 import com.example.csievent.presentation.components.NoticeBanner
@@ -65,9 +67,11 @@ import com.example.csievent.presentation.components.SecondaryButton
 import com.example.csievent.presentation.components.SectionHeader
 import com.example.csievent.presentation.components.StatTile
 import com.example.csievent.presentation.components.StatusChip
+import com.example.csievent.presentation.components.eventPhase
 import com.example.csievent.presentation.components.formatDate
-import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.components.formatJoinCode
+import com.example.csievent.presentation.components.organizerChip
+import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.ui.theme.ControlShape
 import com.example.csievent.ui.theme.CsiTheme
@@ -111,6 +115,9 @@ fun OrganizerEventScreen(
                 subtitle = event?.let { formatDate(it.eventDate) },
                 onBack = { navController.popBackStack() },
                 actions = {
+                    IconButton(onClick = { navController.navigate("${Routes.EDIT_EVENT}/$eventId") }, enabled = event != null) {
+                        Icon(Icons.Rounded.Edit, contentDescription = "Edit event", tint = c.text)
+                    }
                     Box {
                         IconButton(onClick = { menuOpen = true }) {
                             Icon(Icons.Rounded.MoreVert, contentDescription = "More options", tint = c.text)
@@ -143,12 +150,13 @@ fun OrganizerEventScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     item(key = "status") {
-                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                if (locked) StatusChip("Scoring locked", ChipKind.NEUTRAL)
-                                else StatusChip("Open", ChipKind.SUCCESS)
+                                val (phaseText, phaseKind) = organizerChip(eventPhase(event.eventDate, locked))
+                                StatusChip(phaseText, phaseKind)
                                 StatusChip("Teams of up to ${event.maxTeamSize}", ChipKind.NEUTRAL)
                             }
+                            EventFacts(event.eventDate, event.eventTime, event.venue)
                             if (!event.description.isNullOrBlank()) {
                                 Text(event.description, style = MaterialTheme.typography.bodyMedium, color = c.textMuted)
                             }

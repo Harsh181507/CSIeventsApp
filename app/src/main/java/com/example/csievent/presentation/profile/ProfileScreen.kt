@@ -16,11 +16,14 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.DeleteForever
+import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.Policy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,6 +41,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
@@ -49,6 +53,8 @@ import com.example.csievent.presentation.components.CsiCard
 import com.example.csievent.presentation.components.CsiScreen
 import com.example.csievent.presentation.components.CsiTextField
 import com.example.csievent.presentation.components.CsiTopBar
+import com.example.csievent.presentation.components.FormDialog
+import com.example.csievent.presentation.components.MessageEffect
 import com.example.csievent.presentation.components.SectionHeader
 import com.example.csievent.presentation.components.SegmentedTabs
 import com.example.csievent.presentation.components.StatusChip
@@ -71,7 +77,12 @@ fun ProfileScreen(
     val themeMode by viewModel.themeMode.collectAsState()
     val uriHandler = LocalUriHandler.current
 
+    val snackbar = remember { SnackbarHostState() }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showNameDialog by remember { mutableStateOf(false) }
+    var showPasswordDialog by remember { mutableStateOf(false) }
+
+    MessageEffect(state.message, snackbar, viewModel::clearMessage)
 
     LaunchedEffect(state.signedOut) {
         if (state.signedOut) {
@@ -80,6 +91,7 @@ fun ProfileScreen(
     }
 
     CsiScreen(
+        snackbarHostState = snackbar,
         topBar = { CsiTopBar(title = "Profile", onBack = { navController.popBackStack() }) }
     ) { padding ->
         Column(
@@ -124,6 +136,14 @@ fun ProfileScreen(
 
             SectionHeader("Account", modifier = Modifier.padding(top = 8.dp))
             CsiCard(padding = 4) {
+                ActionRow(Icons.Rounded.Edit, "Edit name", c.text) {
+                    viewModel.clearError()
+                    showNameDialog = true
+                }
+                ActionRow(Icons.Rounded.Password, "Change password", c.text) {
+                    viewModel.clearError()
+                    showPasswordDialog = true
+                }
                 ActionRow(Icons.Rounded.Policy, "Privacy policy", c.text) {
                     uriHandler.openUri(ApiConstants.PRIVACY_POLICY_URL)
                 }
@@ -142,6 +162,68 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = c.textSubtle,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
+    }
+
+    if (showNameDialog) {
+        var name by remember { mutableStateOf(state.name) }
+        val save = { viewModel.updateName(name) { showNameDialog = false } }
+        FormDialog(
+            title = "Edit name",
+            confirmLabel = "Save",
+            working = state.isSaving,
+            error = state.error,
+            confirmEnabled = name.isNotBlank() && name.trim() != state.name,
+            onConfirm = save,
+            onDismiss = { showNameDialog = false }
+        ) {
+            CsiTextField(
+                value = name,
+                onValueChange = { name = it.take(100) },
+                label = "Your name",
+                supportingText = "Shown to your team, judges and organizers",
+                capitalization = KeyboardCapitalization.Words,
+                imeAction = ImeAction.Done,
+                onImeAction = save
+            )
+        }
+    }
+
+    if (showPasswordDialog) {
+        var current by remember { mutableStateOf("") }
+        var new by remember { mutableStateOf("") }
+        var confirm by remember { mutableStateOf("") }
+        val save = { viewModel.changePassword(current, new, confirm) { showPasswordDialog = false } }
+        FormDialog(
+            title = "Change password",
+            confirmLabel = "Change",
+            working = state.isSaving,
+            error = state.error,
+            confirmEnabled = current.isNotEmpty() && new.isNotEmpty() && confirm.isNotEmpty(),
+            onConfirm = save,
+            onDismiss = { showPasswordDialog = false }
+        ) {
+            CsiTextField(value = current, onValueChange = { current = it }, label = "Current password", isPassword = true)
+            CsiTextField(
+                value = new,
+                onValueChange = { new = it },
+                label = "New password",
+                isPassword = true,
+                supportingText = "At least 6 characters"
+            )
+            CsiTextField(
+                value = confirm,
+                onValueChange = { confirm = it },
+                label = "Confirm new password",
+                isPassword = true,
+                imeAction = ImeAction.Done,
+                onImeAction = save
+            )
+            Text(
+                "You'll stay signed in here. Other devices will be signed out.",
+                style = MaterialTheme.typography.bodySmall,
+                color = c.textSubtle
             )
         }
     }

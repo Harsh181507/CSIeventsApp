@@ -6,11 +6,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.EmojiEvents
 import androidx.compose.material.icons.rounded.EventAvailable
+import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -40,6 +43,7 @@ import com.example.csievent.presentation.components.CsiCard
 import com.example.csievent.presentation.components.CsiScreen
 import com.example.csievent.presentation.components.EmptyState
 import com.example.csievent.presentation.components.ErrorState
+import com.example.csievent.presentation.components.EventPhase
 import com.example.csievent.presentation.components.EventRow
 import com.example.csievent.presentation.components.JoinCodeBox
 import com.example.csievent.presentation.components.LoadingState
@@ -47,11 +51,13 @@ import com.example.csievent.presentation.components.MessageEffect
 import com.example.csievent.presentation.components.RefreshableBox
 import com.example.csievent.presentation.components.SegmentedTabs
 import com.example.csievent.presentation.components.StatusChip
+import com.example.csievent.presentation.components.eventPhase
 import com.example.csievent.presentation.components.firstName
-import com.example.csievent.presentation.components.formatDate
-import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.components.formatDayMonth
+import com.example.csievent.presentation.components.formatSchedule
+import com.example.csievent.presentation.components.formatTime
 import com.example.csievent.presentation.components.shareText
+import com.example.csievent.presentation.components.shouldConfirmCopy
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.ui.theme.CsiTheme
 import com.example.csievent.ui.theme.monoStyle
@@ -72,8 +78,14 @@ fun StudentHomeScreen(
     LaunchedEffect(Unit) { viewModel.load() }
     MessageEffect(state.message, snackbar, viewModel::clearMessage)
 
-    val upcoming = state.events.filter { !it.scoringLocked }.sortedBy { it.eventDate ?: "9999" }
-    val past = state.events.filter { it.scoringLocked }
+    // Upcoming = today or later; past = date gone by or results out
+    val phases = state.events.associate { it.id to eventPhase(it.eventDate, it.scoringLocked) }
+    val upcoming = state.events
+        .filter { phases[it.id] == EventPhase.UPCOMING || phases[it.id] == EventPhase.TODAY }
+        .sortedWith(compareBy({ it.eventDate ?: "9999" }, { it.eventTime ?: "" }))
+    val past = state.events
+        .filter { phases[it.id] == EventPhase.ENDED || phases[it.id] == EventPhase.RESULTS }
+        .sortedByDescending { it.eventDate ?: "" }
     val hero = upcoming.firstOrNull { state.myTeams.containsKey(it.id) }
     val shown = if (tab == 0) upcoming else past
 
@@ -151,27 +163,31 @@ fun StudentHomeScreen(
                             } else {
                                 EmptyState(
                                     icon = Icons.Rounded.EmojiEvents,
-                                    title = "No results yet",
-                                    message = "Events appear here once judging is complete."
+                                    title = "No past events",
+                                    message = "Events move here once their day is over. Results show up when judging is complete."
                                 )
                             }
                         }
                     } else {
                         items(shown, key = { it.id }) { event ->
                             val team = state.myTeams[event.id]
+                            val phase = phases[event.id]
                             EventRow(
                                 title = event.title,
-                                detail = "${formatDate(event.eventDate)} · teams of up to ${event.maxTeamSize}",
+                                detail = formatSchedule(event.eventDate, event.eventTime, event.venue),
                                 chipText = when {
-                                    event.scoringLocked -> "Results"
+                                    phase == EventPhase.RESULTS -> "Results"
+                                    phase == EventPhase.ENDED -> "Results soon"
                                     team != null -> "You're in"
                                     else -> "Join"
                                 },
                                 chipKind = when {
-                                    event.scoringLocked -> ChipKind.HIGHLIGHT
+                                    phase == EventPhase.RESULTS -> ChipKind.HIGHLIGHT
+                                    phase == EventPhase.ENDED -> ChipKind.NEUTRAL
                                     team != null -> ChipKind.SUCCESS
                                     else -> ChipKind.OUTLINE
                                 },
+                                highlighted = phase == EventPhase.TODAY,
                                 onClick = { openEvent(event) }
                             )
                         }
@@ -196,8 +212,9 @@ private fun NextUpCard(
     val c = CsiTheme.colors
     CsiCard(highlighted = true, onClick = onOpen, onClickLabel = "Open event") {
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val day = if (eventPhase(event.eventDate, event.scoringLocked) == EventPhase.TODAY) "TODAY" else formatDayMonth(event.eventDate)
             Text(
-                formatDayMonth(event.eventDate),
+                listOfNotNull(day, formatTime(event.eventTime)?.uppercase()).joinToString(" · "),
                 style = monoStyle(13.sp, letterSpacing = 0.5.sp),
                 color = c.highlight,
                 modifier = Modifier.weight(1f)
@@ -211,6 +228,12 @@ private fun NextUpCard(
                 style = MaterialTheme.typography.bodyMedium,
                 color = c.textMuted
             )
+            event.venue?.takeIf { it.isNotBlank() }?.let { venue ->
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Icon(Icons.Rounded.Place, contentDescription = null, tint = c.highlight, modifier = Modifier.size(16.dp))
+                    Text(venue, style = MaterialTheme.typography.bodyMedium, color = c.text)
+                }
+            }
         }
         team.joinCode?.let { code ->
             JoinCodeBox(code = code, onCopy = { onCopy(code) }, onShare = { onShare(code) })

@@ -29,7 +29,9 @@ data class StudentTeamsState(
     val myName:         String                = "",
     val myUserId:       Long?                 = null,
     val error:          String?               = null,
-    val message:        String?               = null
+    val message:        String?               = null,
+    /** Error shown inside the rename dialog. */
+    val dialogError:    String?               = null
 )
 
 
@@ -135,6 +137,43 @@ class StudentTeamsViewModel @Inject constructor(
                 }
         }
     }
+
+    /** Leader renames the team; [onDone] closes the dialog. */
+    fun renameTeam(teamId: Long, name: String, eventId: Long, onDone: () -> Unit) {
+        if (_state.value.isWorking) return
+        viewModelScope.launch {
+            _state.update { it.copy(isWorking = true, dialogError = null) }
+
+            repository.renameTeam(teamId, name)
+                .onSuccess { team ->
+                    _state.update { it.copy(isWorking = false, myTeam = team, message = "Team renamed to ${team.teamName}") }
+                    onDone()
+                    loadTeams(eventId)
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isWorking = false, dialogError = error.message ?: "Couldn't rename the team") }
+                }
+        }
+    }
+
+    /** Leader removes a member (by team-membership id). */
+    fun removeMember(memberId: Long, memberName: String, eventId: Long) {
+        if (_state.value.isWorking) return
+        viewModelScope.launch {
+            _state.update { it.copy(isWorking = true) }
+
+            repository.removeMember(memberId)
+                .onSuccess {
+                    _state.update { it.copy(isWorking = false, message = "$memberName was removed from the team") }
+                    loadTeams(eventId)
+                }
+                .onFailure { error ->
+                    _state.update { it.copy(isWorking = false, message = error.message ?: "Couldn't remove $memberName") }
+                }
+        }
+    }
+
+    fun clearDialogError() = _state.update { it.copy(dialogError = null) }
 
     fun showMessage(text: String) = _state.update { it.copy(message = text) }
 

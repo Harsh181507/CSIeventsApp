@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.automirrored.rounded.EventNote
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -29,17 +29,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.csievent.presentation.components.BottomSpacer
 import com.example.csievent.presentation.components.BrandTopBar
-import com.example.csievent.presentation.components.ChipKind
 import com.example.csievent.presentation.components.CsiScreen
 import com.example.csievent.presentation.components.EmptyState
 import com.example.csievent.presentation.components.ErrorState
+import com.example.csievent.presentation.components.EventPhase
 import com.example.csievent.presentation.components.EventRow
 import com.example.csievent.presentation.components.LoadingState
 import com.example.csievent.presentation.components.RefreshableBox
 import com.example.csievent.presentation.components.SectionHeader
 import com.example.csievent.presentation.components.StatTile
+import com.example.csievent.presentation.components.eventPhase
 import com.example.csievent.presentation.components.firstName
-import com.example.csievent.presentation.components.formatDate
+import com.example.csievent.presentation.components.formatSchedule
+import com.example.csievent.presentation.components.organizerChip
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.ui.theme.ControlShape
 import com.example.csievent.ui.theme.CsiTheme
@@ -134,11 +136,14 @@ fun OrganizerHomeScreen(
                     }
 
                     items(state.events, key = { it.id }) { event ->
+                        val phase = eventPhase(event.eventDate, event.scoringLocked)
+                        val (chipText, chipKind) = organizerChip(phase)
                         EventRow(
                             title = event.title,
-                            detail = "${formatDate(event.eventDate)} · teams of up to ${event.maxTeamSize}",
-                            chipText = if (event.scoringLocked) "Locked" else "Open",
-                            chipKind = if (event.scoringLocked) ChipKind.NEUTRAL else ChipKind.SUCCESS,
+                            detail = formatSchedule(event.eventDate, event.eventTime, event.venue),
+                            chipText = chipText,
+                            chipKind = chipKind,
+                            highlighted = phase == EventPhase.TODAY,
                             onClick = { navController.navigate("${Routes.ORGANIZER_EVENT}/${event.id}") }
                         )
                     }

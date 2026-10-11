@@ -3,6 +3,7 @@ package com.example.csievent
 import com.example.csievent.data.remote.ApiException
 import com.example.csievent.data.remote.apiCall
 import com.example.csievent.data.remote.dto.event.EventResponseDto
+import com.example.csievent.data.remote.dto.team.TeamResponseDto
 import com.example.csievent.data.remote.dto.score.LeaderboardResponseDto
 import com.example.csievent.data.remote.toApiException
 import com.google.gson.Gson
@@ -76,5 +77,20 @@ class ApiCallTest {
         )
         assertNull(event.description)
         assertNull(event.createdBy)
+        assertNull(event.eventTime) // older events have no time or venue
+
+        val timed = gson.fromJson(
+            """{"id":2,"title":"Hack","eventDate":"2030-01-01","eventTime":"10:30:00","venue":"AB-1","maxTeamSize":4,"scoringLocked":false}""",
+            EventResponseDto::class.java
+        )
+        assertEquals("10:30:00", timed.eventTime)
+        assertEquals("AB-1", timed.venue)
+
+        val team = gson.fromJson(
+            """{"id":7,"teamName":"Alpha","eventId":2,"leaderId":11,"members":["Asha","Ravi"],"memberDetails":[{"id":31,"userId":11,"name":"Asha"},{"id":32,"userId":12,"name":"Ravi"}]}""",
+            TeamResponseDto::class.java
+        )
+        assertEquals(32L, team.memberDetails!![1].id)
+        assertEquals(11L, team.memberDetails!![0].userId)
     }
 }

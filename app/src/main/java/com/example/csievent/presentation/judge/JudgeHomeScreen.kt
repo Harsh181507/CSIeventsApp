@@ -30,7 +30,7 @@ import com.example.csievent.presentation.components.LoadingState
 import com.example.csievent.presentation.components.RefreshableBox
 import com.example.csievent.presentation.components.SectionHeader
 import com.example.csievent.presentation.components.firstName
-import com.example.csievent.presentation.components.formatDate
+import com.example.csievent.presentation.components.formatSchedule
 import com.example.csievent.presentation.navigation.Routes
 import com.example.csievent.ui.theme.CsiTheme
 
@@ -87,7 +87,7 @@ fun JudgeHomeScreen(
                         items(open, key = { "o${it.id}" }) { event ->
                             EventRow(
                                 title = event.title,
-                                detail = formatDate(event.eventDate),
+                                detail = formatSchedule(event.eventDate, event.eventTime, event.venue),
                                 chipText = "Score teams",
                                 chipKind = ChipKind.OUTLINE,
                                 highlighted = true,
@@ -101,7 +101,7 @@ fun JudgeHomeScreen(
                         items(locked, key = { "l${it.id}" }) { event ->
                             EventRow(
                                 title = event.title,
-                                detail = formatDate(event.eventDate),
+                                detail = formatSchedule(event.eventDate, event.eventTime, event.venue),
                                 chipText = "Results",
                                 chipKind = ChipKind.HIGHLIGHT,
                                 onClick = { navController.navigate("${Routes.RESULTS}/${event.id}") }
